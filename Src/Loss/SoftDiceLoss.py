@@ -11,23 +11,26 @@ class SoftDiceLoss(nn.Module):
         self.eps = eps
 
     def forward(self, prediction, target):
-        with torch.no_grad():
-            prediction = prediction.cpu().numpy()
-            target = target.cpu().numpy()
+        # with torch.no_grad():
+        #     prediction = prediction.cpu().numpy()
+        #     target = target.cpu().numpy()
 
         empty_value = -1.0
         dscs = empty_value * np.ones((self.num_classes,), dtype=np.float32)
         for i in range(0, self.num_classes):
             if i not in target and i not in prediction:
                 continue
-            target_per_class = np.where(target == i, 1, 0).astype(np.float32)
-            prediction_per_class = np.where(prediction == i, 1, 0).astype(np.float32)
+            # target_per_class = np.where(target == i, 1, 0).astype(np.float32)
+            # prediction_per_class = np.where(prediction == i, 1, 0).astype(np.float32)
 
-            tp = np.sum(prediction_per_class * target_per_class)
-            fp = np.sum(prediction_per_class) - tp
-            fn = np.sum(target_per_class) - tp
+            target_per_class = torch.where(target == i, 1, 0).type(torch.cuda.FloatTensor)
+            prediction_per_class = torch.where(prediction == i, 1, 0).type(torch.cuda.FloatTensor)
+
+            tp = torch.sum(prediction_per_class * target_per_class)
+            fp = torch.sum(prediction_per_class) - tp
+            fn = torch.sum(target_per_class) - tp
             dsc = 2 * tp / (2 * tp + fp + fn + self.eps)
             dscs[i] = dsc
-        dscs = np.where(dscs == -1.0, np.nan, dscs)
-        subject_level_dice = np.nanmean(dscs[1:])  # class 0 is excluded
+        dscs = torch.where(dscs == -1.0, 0, dscs)
+        subject_level_dice = torch.mean(dscs[1:])  # class 0 is excluded
         return subject_level_dice
