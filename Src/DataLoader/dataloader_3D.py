@@ -15,7 +15,7 @@ def read_data(case_dir):
 
     for img_name in list_MR_Mask:
         img = os.path.join(case_dir, img_name, '.nii.gz')
-        assert os.path.exists(img)
+        # assert os.path.exists(img)
 
         if img_name == 'MR':
             dtype = sitk.sitkFloat32
