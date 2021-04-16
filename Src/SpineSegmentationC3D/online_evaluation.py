@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
-from ..DataLoader.dataloader_3D import val_transform, read_data, pre_processing
-from ..Evaluate.evaluate import *
+from DataLoader.dataloader_3D import val_transform, read_data, pre_processing
+from Evaluate.evaluate import *
 from model import *
 
 

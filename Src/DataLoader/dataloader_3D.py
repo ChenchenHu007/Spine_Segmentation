@@ -5,7 +5,7 @@ import numpy as np
 import random
 import cv2
 
-from ..DataAugmentation.augmentation_3D import \
+from DataAugmentation.augmentation_3D import \
     random_flip_3d, random_rotate_around_z_axis, random_translate, to_tensor
 
 

@@ -6,9 +6,9 @@ from tqdm import tqdm
 if os.path.abspath('..') not in sys.path:
     sys.path.insert(0, os.path.abspath('..'))
 
-from ..Evaluate.evaluate import *
+from Evaluate.evaluate import *
 from model import *
-from ..NetworkTrainer.network_trainer import *
+from NetworkTrainer.network_trainer import *
 
 
 def read_data(case_dir):

@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 import torch.nn as nn
-from ..Loss import SoftDiceLoss
+from Loss import SoftDiceLoss
 
 
 class Loss(nn.Module):
