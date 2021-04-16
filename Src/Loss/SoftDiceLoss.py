@@ -16,7 +16,7 @@ class SoftDiceLoss(nn.Module):
         #     target = target.cpu().numpy()
 
         empty_value = -1.0
-        dscs = empty_value * np.ones((self.num_classes,), dtype=np.float32)
+        dscs = empty_value * torch.ones((self.num_classes,), dtype=torch.float32)
         for i in range(0, self.num_classes):
             if i not in target and i not in prediction:
                 continue
@@ -31,6 +31,6 @@ class SoftDiceLoss(nn.Module):
             fn = torch.sum(target_per_class) - tp
             dsc = 2 * tp / (2 * tp + fp + fn + self.eps)
             dscs[i] = dsc
-        dscs = torch.where(dscs == -1.0, 0, dscs)
+        dscs = torch.where(dscs == -1.0, 0., dscs)
         subject_level_dice = torch.mean(dscs[1:])  # class 0 is excluded
         return subject_level_dice
