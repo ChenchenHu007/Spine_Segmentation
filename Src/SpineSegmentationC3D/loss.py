@@ -16,8 +16,9 @@ class Loss(nn.Module):
             pred_B = prediction[1].cpu().numpy()
             gt_mask = gt[0]
 
-        pred_A_loss = self.soft_dice(pred_A, gt_mask)
-        pred_B_loss = self.soft_dice(pred_B, gt_mask)
+            pred_A_loss = self.soft_dice(pred_A, gt_mask)
+            pred_B_loss = self.soft_dice(pred_B, gt_mask)
 
-        L1_loss = 0.5 * pred_A_loss + pred_B_loss
+            L1_loss = 0.5 * pred_A_loss + pred_B_loss
+
         return L1_loss
