@@ -1,6 +1,6 @@
 from torch import nn
 import numpy as np
-
+import torch
 
 # modified from https://www.spinesegmentation-challenge.com/?page_id=34
 class SoftDiceLoss(nn.Module):
@@ -11,6 +11,9 @@ class SoftDiceLoss(nn.Module):
         self.eps = eps
 
     def forward(self, prediction, target):
+        with torch.no_grad():
+            prediction = prediction.cpu().numpy
+            target = target.cpu().numpy()
 
         empty_value = -1.0
         dscs = empty_value * np.ones((self.num_classes,), dtype=np.float32)
