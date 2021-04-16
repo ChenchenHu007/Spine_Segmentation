@@ -28,7 +28,7 @@ if __name__ == '__main__':
     # added by Chenchen Hu
     parser.add_argument('--latest', type=int, default=0,
                         help='load the latest model')
-    parser.add_argument('--model_path', type=str, default='../../Output/C3D/latest.pkl')
+    parser.add_argument('--model_path', type=str, default='../../Output/SpineSegmentationC3D/latest.pkl')
 
     args = parser.parse_args()
 
