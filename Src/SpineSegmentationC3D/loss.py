@@ -10,8 +10,8 @@ class Loss(nn.Module):
         self.soft_dice = SoftDiceLoss.SoftDiceLoss(num_classes=20, eps=1e-10)
 
     def forward(self, prediction, gt):
-        pred_A = prediction[0]
-        pred_B = prediction[1]
+        pred_A = prediction[0].cpu()
+        pred_B = prediction[1].cpu()
         gt_mask = gt[0]
 
         pred_A_loss = self.soft_dice(pred_A, gt_mask)
