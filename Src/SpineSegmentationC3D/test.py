@@ -16,7 +16,7 @@ def read_data(case_dir):
     list_MR_Mask = ['MR', 'Mask']
 
     for img_name in list_MR_Mask:
-        img = os.path.join(case_dir, img_name, '.nii.gz')
+        img = case_dir + '/' + img_name + '.nii.gz'
         assert os.path.exists(img)
 
         if img_name == 'MR':
@@ -25,8 +25,7 @@ def read_data(case_dir):
         else:
             dtype = sitk.sitkUInt8
 
-        if os.path.exists(img):
-            dict_images[img_name] = sitk.ReadImage(img, dtype)
+        dict_images[img_name] = sitk.ReadImage(img, dtype)
 
     return dict_images
 

@@ -24,6 +24,7 @@ def read_data(case_dir):
             dtype = sitk.sitkUInt8
 
         dict_images[img_name] = sitk.ReadImage(img, dtype)
+        dict_images[img_name] = sitk.GetArrayFromImage(dict_images[img_name])[np.newaxis, :, :, :]
 
     return dict_images
 
