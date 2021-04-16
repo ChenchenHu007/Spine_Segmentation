@@ -79,8 +79,8 @@ class SpineDataset(data.Dataset):
         Spine_Segmentation = '../../Data/Spine_Segmentation'
         cases = sorted(os.listdir(Spine_Segmentation))
 
-        self.list_case_id = {'train': [cases[i] for i in range(0, 120)],
-                             'val': [cases[i] for i in range(120, 151)]}[phase]
+        self.list_case_id = {'train': [os.path.join(Spine_Segmentation, cases[i]) for i in range(0, 120)],
+                             'val': [os.path.join(Spine_Segmentation, cases[i]) for i in range(120, 151)]}[phase]
 
         random.shuffle(self.list_case_id)
         self.num_case = len(self.list_case_id)
