@@ -12,7 +12,7 @@ class SoftDiceLoss(nn.Module):
 
     def forward(self, prediction, target):
         with torch.no_grad():
-            prediction = prediction.cpu().numpy
+            prediction = prediction.cpu().numpy()
             target = target.cpu().numpy()
 
         empty_value = -1.0
