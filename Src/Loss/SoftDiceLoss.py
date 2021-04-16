@@ -30,4 +30,4 @@ class SoftDiceLoss(nn.Module):
             dscs[i] = dsc
         dscs = np.where(dscs == -1.0, np.nan, dscs)
         subject_level_dice = np.nanmean(dscs[1:])  # class 0 is excluded
-        return torch.from_numpy(subject_level_dice).to('cuda:0')
+        return torch.tensor(np.asarray(subject_level_dice)).to('cuda:0')
