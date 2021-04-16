@@ -39,7 +39,7 @@ if __name__ == '__main__':
     list_GPU_ids = args.list_GPU_ids
 
     # setting.network is an object
-    trainer.setting.network = Model(in_ch=9, out_ch=1,
+    trainer.setting.network = Model(in_ch=1, out_ch=1,
                                     list_ch_A=[-1, 16, 32, 64, 128, 256],
                                     list_ch_B=[-1, 32, 64, 128, 256, 512])  # list_ch_B=[-1, 32, 64, 128, 256, 512]
 
