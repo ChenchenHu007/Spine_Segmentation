@@ -12,8 +12,8 @@ class Loss(nn.Module):
 
     def forward(self, prediction, gt):
         with torch.no_grad():
-            pred_A = prediction[0].cpu().numpy()
-            pred_B = prediction[1].cpu().numpy()
+            pred_A = prediction[0].cpu().detach().numpy()
+            pred_B = prediction[1].cpu().detach().numpy()
             gt_mask = gt[0]
 
             pred_A_loss = self.soft_dice(pred_A, gt_mask)
