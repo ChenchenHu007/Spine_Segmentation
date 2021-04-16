@@ -2,6 +2,7 @@ from torch import nn
 import numpy as np
 import torch
 
+
 # modified from https://www.spinesegmentation-challenge.com/?page_id=34
 class SoftDiceLoss(nn.Module):
     def __init__(self, num_classes=20, eps=1e-10):
