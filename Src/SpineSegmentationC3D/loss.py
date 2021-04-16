@@ -11,9 +11,10 @@ class Loss(nn.Module):
         self.soft_dice = SoftDiceLoss.SoftDiceLoss(num_classes=20, eps=1e-10)
 
     def forward(self, prediction, gt):
-        pred_A = prediction[0].cpu().data.numpy()
-        pred_B = prediction[1].cpu().data.numpy()
-        gt_mask = gt[0]
+        with torch.no_grad():
+            pred_A = prediction[0].numpy()
+            pred_B = prediction[1].numpy()
+            gt_mask = gt[0]
 
         pred_A_loss = self.soft_dice(pred_A, gt_mask)
         pred_B_loss = self.soft_dice(pred_B, gt_mask)
