@@ -189,7 +189,7 @@ class NetworkTrainer:
         # Forward
         if phase == 'train':
             self.setting.optimizer.zero_grad()
-        output = self.setting.network(input_)
+        output = self.setting.network(input_)  # [tensor, tensor]
 
         return output
 
@@ -202,7 +202,7 @@ class NetworkTrainer:
         self.time.train_loader_time_per_epoch += time.time() - time_start_load_data
 
         # Optimize
-        loss = self.setting.loss_function(output, target)
+        loss = self.setting.loss_function(output, target)  # output -> [tensor, tensor]; target -> [tensor]  'cuda:0'
         loss.backward()
         self.setting.optimizer.step()
 
