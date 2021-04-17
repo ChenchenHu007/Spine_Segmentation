@@ -216,15 +216,15 @@ class NetworkTrainer:
         count_iter = 0
 
         time_start_load_data = time.time()
-        for batch_idx, list_loader_output in enumerate(self.setting.train_loader):
+        for batch_idx, case in enumerate(self.setting.train_loader):
 
             if (self.setting.max_iter is not None) and (self.log.iter >= self.setting.max_iter - 1):
                 break
             self.log.iter += 1
 
             # List_loader_output[0] default as the input
-            input_ = list_loader_output[0]
-            target = list_loader_output[1:]
+            input_ = case[0]
+            target = case[1:]
 
             # Record time of preparing data
             self.time.train_loader_time_per_epoch += time.time() - time_start_load_data
