@@ -21,14 +21,16 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--batch_size', type=int, default=2,
                         help='batch size for training (default: 2)')
-    parser.add_argument('--list_GPU_ids', nargs='+', type=int, default=[1, 0],
-                        help='list_GPU_ids for training (default: [1, 0])')
+    parser.add_argument('--list_GPU_ids', nargs='+', type=int, default=0,
+                        help='list_GPU_ids for training (default: 0)')
     parser.add_argument('--max_iter',  type=int, default=80000,
                         help='training iterations(default: 80000)')
     # added by Chenchen Hu
     parser.add_argument('--latest', type=int, default=0,
                         help='load the latest model')
     parser.add_argument('--model_path', type=str, default='../../Output/SpineSegmentationC3D/latest.pkl')
+    parser.add_argument('--model_type', type=str, default='C3D_base',
+                        help='the type of C3D(default: C3D_base)')
 
     args = parser.parse_args()
 
@@ -39,9 +41,14 @@ if __name__ == '__main__':
     list_GPU_ids = args.list_GPU_ids
 
     # setting.network is an object
-    trainer.setting.network = Model(in_ch=1, out_ch=1,
-                                    list_ch_A=[-1, 16, 32, 64, 128, 256],
-                                    list_ch_B=[-1, 16, 32, 64, 128, 256])  # list_ch_B=[-1, 32, 64, 128, 256, 512]
+    if args.model_type == 'C3D_base':
+        trainer.setting.network = Model(in_ch=1, out_ch=1,
+                                        list_ch_A=[-1, 16, 32, 64, 128, 256],
+                                        list_ch_B=[-1, 32, 64, 128, 256, 512])
+    elif args.model_path == 'C3D_small':
+        trainer.setting.network = Model(in_ch=1, out_ch=1,
+                                        list_ch_A=[-1, 16, 32, 64, 128, 256],
+                                        list_ch_B=[-1, 16, 32, 64, 128, 256])
 
     trainer.setting.max_iter = args.max_iter  # 80000 or 100000
 
