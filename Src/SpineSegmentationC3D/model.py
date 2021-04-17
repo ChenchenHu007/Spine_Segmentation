@@ -41,7 +41,7 @@ class Encoder(nn.Module):
             SingleConv(list_ch[1], list_ch[1], kernel_size=3, stride=1, padding=1)
         )
         self.encoder_2 = nn.Sequential(
-            SingleConv(list_ch[1], list_ch[2], kernel_size=3, stride=2, padding=1),  # down-sampling
+            SingleConv(list_ch[1], list_ch[2], kernel_size=3, stride=2, padding=1),
             SingleConv(list_ch[2], list_ch[2], kernel_size=3, stride=1, padding=1)
         )
         self.encoder_3 = nn.Sequential(
@@ -52,29 +52,19 @@ class Encoder(nn.Module):
             SingleConv(list_ch[3], list_ch[4], kernel_size=3, stride=2, padding=1),
             SingleConv(list_ch[4], list_ch[4], kernel_size=3, stride=1, padding=1)
         )
+        self.encoder_5 = nn.Sequential(
+            SingleConv(list_ch[4], list_ch[5], kernel_size=3, stride=2, padding=1),
+            SingleConv(list_ch[5], list_ch[5], kernel_size=3, stride=1, padding=1)
+        )
 
     def forward(self, x):
         out_encoder_1 = self.encoder_1(x)
         out_encoder_2 = self.encoder_2(out_encoder_1)
         out_encoder_3 = self.encoder_3(out_encoder_2)
         out_encoder_4 = self.encoder_4(out_encoder_3)
+        out_encoder_5 = self.encoder_5(out_encoder_4)
 
-        return [out_encoder_1, out_encoder_2, out_encoder_3, out_encoder_4]
-
-
-class BottleNeck(nn.Module):
-    def __init__(self, list_ch):
-        super(BottleNeck, self).__init__()
-
-        self.bottle_neck = nn.Sequential(
-            SingleConv(list_ch[4], list_ch[5], kernel_size=3, stride=2, padding=1),
-            SingleConv(list_ch[5], list_ch[5], kernel_size=3, stride=1, padding=1)
-        )
-
-    def forward(self, x):
-        out_bottle_neck = self.bottle_neck(x)
-
-        return out_bottle_neck
+        return [out_encoder_1, out_encoder_2, out_encoder_3, out_encoder_4, out_encoder_5]
 
 
 class Decoder(nn.Module):
@@ -101,11 +91,11 @@ class Decoder(nn.Module):
             SingleConv(2 * list_ch[1], list_ch[1], kernel_size=3, stride=1, padding=1)
         )
 
-    def forward(self, out_encoder, out_bottle_neck):
-        out_encoder_1, out_encoder_2, out_encoder_3, out_encoder_4 = out_encoder
+    def forward(self, out_encoder):
+        out_encoder_1, out_encoder_2, out_encoder_3, out_encoder_4, out_encoder_5 = out_encoder
 
         out_decoder_4 = self.decoder_conv_4(
-            torch.cat((self.upconv_4(out_bottle_neck), out_encoder_4), dim=1)
+            torch.cat((self.upconv_4(out_encoder_5), out_encoder_4), dim=1)
         )
         out_decoder_3 = self.decoder_conv_3(
             torch.cat((self.upconv_3(out_decoder_4), out_encoder_3), dim=1)
@@ -124,7 +114,6 @@ class BaseUNet(nn.Module):
     def __init__(self, in_ch, list_ch):
         super(BaseUNet, self).__init__()
         self.encoder = Encoder(in_ch, list_ch)
-        self.bottle_neck = BottleNeck(list_ch)
         self.decoder = Decoder(list_ch)
 
         # init
@@ -132,7 +121,7 @@ class BaseUNet(nn.Module):
 
     @staticmethod
     def init_conv_IN(modules):
-        for m in modules():  # depth search
+        for m in modules():
             if isinstance(m, nn.Conv3d):
                 nn.init.kaiming_uniform_(m.weight, mode='fan_in', nonlinearity='relu')
                 if m.bias is not None:
@@ -142,18 +131,14 @@ class BaseUNet(nn.Module):
                 nn.init.constant_(m.bias, 0.)
 
     def initialize(self):
-        print('# start to init weights using nn.init.kaiming_uniform !')
-        self.init_conv_IN(self.encoder.modules)
-        print('# init encoder weights successfully !')
-        self.init_conv_IN(self.bottle_neck.modules)
-        print('# init bottle_neck weights successfully !')
+        print('# random init encoder weight using nn.init.kaiming_uniform !')
         self.init_conv_IN(self.decoder.modules)
-        print('# init decoder weights successfully !')
+        print('# random init decoder weight using nn.init.kaiming_uniform !')
+        self.init_conv_IN(self.encoder.modules)
 
     def forward(self, x):
         out_encoder = self.encoder(x)
-        out_bottle_neck = self.bottle_neck(out_encoder[3])
-        out_decoder = self.decoder(out_encoder, out_bottle_neck)
+        out_decoder = self.decoder(out_encoder)
 
         # Output is a list: [Output]
         return out_decoder
