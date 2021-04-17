@@ -39,16 +39,19 @@ if __name__ == '__main__':
     trainer.setting.project_name = 'Spine_Segmentation_C3D'
     trainer.setting.output_dir = '../../Output/Spine_Segmentation_C3D'
     list_GPU_ids = args.list_GPU_ids
+    print(args.model_type)
 
     # setting.network is an object
     if args.model_type == 'C3D_base':
         trainer.setting.network = Model(in_ch=1, out_ch=1,
                                         list_ch_A=[-1, 16, 32, 64, 128, 256],
                                         list_ch_B=[-1, 32, 64, 128, 256, 512])
-    elif args.model_path == 'C3D_small':
+        print('Loading C3D_base !')
+    else:
         trainer.setting.network = Model(in_ch=1, out_ch=1,
                                         list_ch_A=[-1, 16, 32, 64, 128, 256],
                                         list_ch_B=[-1, 16, 32, 64, 128, 256])
+        print('Loading C3D_small !')
 
     trainer.setting.max_iter = args.max_iter  # 80000 or 100000
 
