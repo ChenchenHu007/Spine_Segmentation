@@ -30,7 +30,7 @@ if __name__ == '__main__':
                         help='load the latest model')
     parser.add_argument('--model_path', type=str, default='../../Output/SpineSegmentationC3D/latest.pkl')
     parser.add_argument('--model_type', type=str, default='C3D_base',
-                        help='the type of C3D(default: C3D_base)')
+                        help='the type of C3D(C3D_base or C3D_small)')
 
     args = parser.parse_args()
 
