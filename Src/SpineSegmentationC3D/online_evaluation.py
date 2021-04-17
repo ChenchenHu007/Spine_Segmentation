@@ -7,15 +7,13 @@ from model import *
 def online_evaluation(trainer):
     Spine_Segmentation = '../../Data/Spine_Segmentation'
     cases = sorted(os.listdir(Spine_Segmentation))
-    list_case_dirs = [cases[i] for i in range(120, 151)]
+    list_case_dirs = [os.path.join(Spine_Segmentation, cases[i]) for i in range(120, 151)]
     list_Dice_score = []
     # val_loader = trainer.setting.val_loader
 
     with torch.no_grad():
         trainer.setting.network.eval()
-        # for batch_idx, list_loader_output in enumerate(val_loader):
-        #     input_ = list_loader_output[0]  # np.array
-        #     gt_mask = list_loader_output[1:]  # need to modify
+
         for case_dir in list_case_dirs:
             case_id = case_dir.split('/')[-1]
 
