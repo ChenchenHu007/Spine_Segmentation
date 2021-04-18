@@ -3,10 +3,42 @@ import numpy as np
 from glob import glob
 import SimpleITK as sitk
 from shutil import copyfile
+from scipy.ndimage import zoom
+
+
+def resize_image(image, dsize=(16, 256, 256)):
+    """
+    resizes for each slice then adds zeros slice to dsize[0]
+    image:sitk.SimpleITK.Image
+    dsize: The order of dsize is (z, y, x)
+    """
+    assert isinstance(image, sitk.SimpleITK.Image)
+
+    image = sitk.GetArrayFromImage(image)
+    num_classes = np.amax(image)
+    original_size = np.array(image.shape)
+    if original_size[0] >= dsize[0]:
+        dsize_ = np.array(dsize)
+    else:
+        dsize_ = np.array([original_size[0], dsize[1], dsize[2]])
+    resize_factor = dsize_ / original_size
+    image = zoom(image, resize_factor)
+    for i in range(dsize[0] - original_size[0]):
+        if not i % 2:
+            image = np.concatenate((np.zeros((1, dsize[1], dsize[2])), image), axis=0)
+        else:
+            image = np.concatenate((image, np.zeros((1, dsize[1], dsize[2]))), axis=0)
+
+    return image, num_classes
 
 
 # modified from https://simpleitk.readthedocs.io/en/master/link_DicomConvert_docs.html?highlight=resample
-def resize_image(image, dsize=(512, 512, 16)):  # note that sequence of array in sitk is (x, y, z)
+def resize_image_sitk(image, dsize=(256, 256, 16)):  # note that order in sitk is (x, y, z)
+    """
+    image:sitk.SimpleITK.Image
+    dsize: The order of dsize is similar with sitk
+    """
+    assert isinstance(image, sitk.SimpleITK.Image)
     original_size = np.array(image.GetSize())
     original_spacing = np.array(image.GetSpacing())
 
@@ -69,7 +101,8 @@ if __name__ == '__main__':
         if not os.path.exists(dst_path):
             os.mkdir(dst_path)
         img = sitk.ReadImage(case_path)
-        img = resize_image(img, dsize=(512, 512, 16))
+        img, _ = resize_image(img, dsize=(16, 256, 256))
+        img = sitk.GetImageFromArray(img)
         sitk.WriteImage(img, dst_path + '/' + 'MR.nii.gz')
 
     for Mask in Masks:
@@ -81,7 +114,11 @@ if __name__ == '__main__':
         if not os.path.exists(dst_path):
             os.mkdir(dst_path)
         img = sitk.ReadImage(case_path)
-        img = resize_image(img, dsize=(512, 512, 16))
+        img, num_classes = resize_image(img, dsize=(16, 256, 256))
+        img = img.astype(np.uint16)
+        img = np.where(img > num_classes, num_classes, img)
+        img = np.where(img < 0, 0, img)
+        img = sitk.GetImageFromArray(img)
         sitk.WriteImage(img, dst_path + '/' + 'Mask.nii.gz')
 
     for Mask in Masks:
@@ -90,3 +127,5 @@ if __name__ == '__main__':
         src = os.path.join(Mask_path, Mask)
         dst = os.path.join(case_path, 'Mask_original.nii.gz')
         copyfile(src, dst)
+
+    print('Done!')
