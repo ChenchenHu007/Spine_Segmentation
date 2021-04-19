@@ -2,6 +2,11 @@
 # -*- encoding: utf-8 -*-
 import os
 import sys
+import random
+import numpy as np
+
+import torch
+
 if os.path.abspath('..') not in sys.path:
     sys.path.insert(0, os.path.abspath('..'))
 
@@ -16,6 +21,7 @@ from loss import Loss
 if __name__ == '__main__':
 
     # added by ChenChen Hu
+    torch.manual_seed()
     print('This script has been modified by Chenchen Hu !')
 
     parser = argparse.ArgumentParser()
@@ -32,8 +38,14 @@ if __name__ == '__main__':
     parser.add_argument('--model_path', type=str, default='../../Output/SpineSegmentationC3D/latest.pkl')
     parser.add_argument('--model_type', type=str, default='C3D_base',
                         help='the type of C3D(C3D_base or C3D_small)')
+    parser.add_argument('--seed', type=int, default=68,
+                        help='set the seed')
 
     args = parser.parse_args()
+
+    torch.manual_seed(args.seed)
+    random.seed(args.seed)
+    np.random.seed(args.seed)
 
     #  Start training
     trainer = NetworkTrainer()
@@ -61,7 +73,7 @@ if __name__ == '__main__':
         val_bs=1,
         train_num_samples_per_epoch=args.batch_size * 500,  # 500 iterations per epoch => 1000 samples per epoch
         val_num_samples_per_epoch=1,
-        num_works=4
+        num_works=8
     )
 
     trainer.setting.eps_train_loss = 0.01
