@@ -1,9 +1,11 @@
 """
-These file copied from https://github.com/JunMa11/SegLoss/blob/master/losses_pytorch/ND_Crossentropy.py
+This file is copied from https://github.com/JunMa11/SegLoss/blob/master/losses_pytorch/ND_Crossentropy.py
+
+Perhaps these functions are compatible to (b, num_classes, z, y, x) and (b, num_classes, x, y, z)
 """
 
 import torch
-from Loss.ND_Crossentropy import CrossentropyND, TopKLoss, WeightedCrossEntropyLoss
+from Loss.SegLoss.ND_Crossentropy import CrossentropyND, TopKLoss, WeightedCrossEntropyLoss
 from torch import nn
 from torch.autograd import Variable
 from torch import einsum
@@ -11,7 +13,10 @@ import numpy as np
 
 
 def softmax_helper(x):
-    # copy from: https://github.com/MIC-DKFZ/nnUNet/blob/master/nnunet/utilities/nd_softmax.py
+    """
+    softmax function
+    copy from: https://github.com/MIC-DKFZ/nnUNet/blob/master/nnunet/utilities/nd_softmax.py
+    """
     rpt = [1 for _ in range(len(x.size()))]
     rpt[1] = x.size(1)
     x_max = x.max(1, keepdim=True)[0].repeat(*rpt)
@@ -33,11 +38,12 @@ def sum_tensor(inp, axes, keepdim=False):
 
 def get_tp_fp_fn(net_output, gt, axes=None, mask=None, square=False):
     """
-    net_output must be (b, c, x, y(, z)))
+    The notes is modified by Chenchen Hu
     gt must be a label map (shape (b, 1, x, y(, z)) OR shape (b, x, y(, z))) or one hot encoding (b, c, x, y(, z))
     if mask is provided it must have shape (b, 1, x, y(, z)))
-    :param net_output:
-    :param gt:
+
+    :param net_output: 4D (b, c, x, y) or (b, c, y, x), 5D (b, c, z , y, x) or (b, c, x, y, z)
+    :param gt: (b, 1, ...) or (b, ...) or one_hot encoding (b, c, ...)
     :param axes:
     :param mask: mask must be 1 for valid pixels and 0 for invalid pixels
     :param square: if True then fp, tp and fn will be squared before summation
@@ -85,7 +91,7 @@ def get_tp_fp_fn(net_output, gt, axes=None, mask=None, square=False):
 
 
 class GDiceLoss(nn.Module):
-    def __init__(self, apply_nonlin=None, smooth=1e-5):
+    def __init__(self, apply_nonlinear=None, smooth=1e-5):
         """
         Generalized Dice;
         Copy from: https://github.com/LIVIAETS/surface-loss/blob/108bd9892adca476e6cdf424124bc6268707498e/losses.py#L29
@@ -94,7 +100,7 @@ class GDiceLoss(nn.Module):
         """
         super(GDiceLoss, self).__init__()
 
-        self.apply_nonlin = apply_nonlin
+        self.apply_nonlinear = apply_nonlinear
         self.smooth = smooth
 
     def forward(self, net_output, gt):
@@ -107,21 +113,21 @@ class GDiceLoss(nn.Module):
 
             if all([i == j for i, j in zip(net_output.shape, gt.shape)]):
                 # if this is the case then gt is probably already a one hot encoding
-                y_onehot = gt
+                y_one_hot = gt
             else:
                 gt = gt.long()
-                y_onehot = torch.zeros(shp_x)
+                y_one_hot = torch.zeros(shp_x)
                 if net_output.device.type == "cuda":
-                    y_onehot = y_onehot.cuda(net_output.device.index)
-                y_onehot.scatter_(1, gt, 1)
+                    y_one_hot = y_one_hot.cuda(net_output.device.index)
+                y_one_hot.scatter_(1, gt, 1)
 
-        if self.apply_nonlin is not None:
-            net_output = self.apply_nonlin(net_output)
+        if self.apply_nonlinear is not None:
+            net_output = self.apply_nonlinear(net_output)
 
         # copy from https://github.com/LIVIAETS/surface-loss/blob/108bd9892adca476e6cdf424124bc6268707498e/losses.py#L29
-        w: torch.Tensor = 1 / (einsum("bcxyz->bc", y_onehot).type(torch.float32) + 1e-10) ** 2
-        intersection: torch.Tensor = w * einsum("bcxyz, bcxyz->bc", net_output, y_onehot)
-        union: torch.Tensor = w * (einsum("bcxyz->bc", net_output) + einsum("bcxyz->bc", y_onehot))
+        w: torch.Tensor = 1 / (einsum("bcxyz->bc", y_one_hot).type(torch.float32) + 1e-10) ** 2
+        intersection: torch.Tensor = w * einsum("bcxyz, bcxyz->bc", net_output, y_one_hot)
+        union: torch.Tensor = w * (einsum("bcxyz->bc", net_output) + einsum("bcxyz->bc", y_one_hot))
         divided: torch.Tensor = - 2 * (einsum("bc->b", intersection) + self.smooth) / (
                     einsum("bc->b", union) + self.smooth)
         gdc = divided.mean()
@@ -254,17 +260,18 @@ class SSLoss(nn.Module):
 
 
 class SoftDiceLoss(nn.Module):
-    def __init__(self, apply_nonlin=None, batch_dice=False, do_bg=True, smooth=1.,
+    def __init__(self, apply_nonlinear=nn.Softmax(dim=1), batch_dice=False, do_bg=True, smooth=1.,
                  square=False):
         """
         paper: https://arxiv.org/pdf/1606.04797.pdf
+        :param apply_nonlinear:
         """
         super(SoftDiceLoss, self).__init__()
 
         self.square = square
         self.do_bg = do_bg
         self.batch_dice = batch_dice
-        self.apply_nonlin = apply_nonlin
+        self.apply_nonlinear = apply_nonlinear
         self.smooth = smooth
 
     def forward(self, x, y, loss_mask=None):
@@ -275,8 +282,8 @@ class SoftDiceLoss(nn.Module):
         else:
             axes = list(range(2, len(shp_x)))
 
-        if self.apply_nonlin is not None:
-            x = self.apply_nonlin(x)
+        if self.apply_nonlinear is not None:
+            x = self.apply_nonlinear(x)
 
         tp, fp, fn = get_tp_fp_fn(x, y, axes, loss_mask, self.square)
 
@@ -435,7 +442,7 @@ class DC_and_CE_loss(nn.Module):
         super(DC_and_CE_loss, self).__init__()
         self.aggregate = aggregate
         self.ce = CrossentropyND(**ce_kwargs)
-        self.dc = SoftDiceLoss(apply_nonlin=softmax_helper, **soft_dice_kwargs)
+        self.dc = SoftDiceLoss(apply_nonlinear=nn.Softmax(dim=1), **soft_dice_kwargs)
 
     def forward(self, net_output, target):
         dc_loss = self.dc(net_output, target)
@@ -455,7 +462,7 @@ class PenaltyGDiceLoss(nn.Module):
     def __init__(self, gdice_kwargs):
         super(PenaltyGDiceLoss, self).__init__()
         self.k = 2.5
-        self.gdc = GDiceLoss(apply_nonlin=softmax_helper, **gdice_kwargs)
+        self.gdc = GDiceLoss(apply_nonlinear=softmax_helper, **gdice_kwargs)
 
     def forward(self, net_output, target):
         gdc_loss = self.gdc(net_output, target)
@@ -469,7 +476,7 @@ class DC_and_topk_loss(nn.Module):
         super(DC_and_topk_loss, self).__init__()
         self.aggregate = aggregate
         self.ce = TopKLoss(**ce_kwargs)
-        self.dc = SoftDiceLoss(apply_nonlin=softmax_helper, **soft_dice_kwargs)
+        self.dc = SoftDiceLoss(apply_nonlinear=softmax_helper, **soft_dice_kwargs)
 
     def forward(self, net_output, target):
         dc_loss = self.dc(net_output, target)
@@ -490,7 +497,7 @@ class ExpLog_loss(nn.Module):
     def __init__(self, soft_dice_kwargs, wce_kwargs, gamma=0.3):
         super(ExpLog_loss, self).__init__()
         self.wce = WeightedCrossEntropyLoss(**wce_kwargs)
-        self.dc = SoftDiceLoss(apply_nonlin=softmax_helper, **soft_dice_kwargs)
+        self.dc = SoftDiceLoss(apply_nonlinear=softmax_helper, **soft_dice_kwargs)
         self.gamma = gamma
 
     def forward(self, net_output, target):

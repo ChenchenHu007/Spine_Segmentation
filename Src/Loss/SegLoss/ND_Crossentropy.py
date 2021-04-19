@@ -1,5 +1,5 @@
 """
-These file coyed from https://github.com/JunMa11/SegLoss/blob/master/losses_pytorch/ND_Crossentropy.py
+These file copied from https://github.com/JunMa11/SegLoss/blob/master/losses_pytorch/ND_Crossentropy.py
 """
 
 
