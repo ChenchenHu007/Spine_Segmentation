@@ -26,6 +26,7 @@ if __name__ == '__main__':
     parser.add_argument('--max_iter',  type=int, default=80000,
                         help='training iterations(default: 80000)')
     # added by Chenchen Hu
+    parser.add_argument('--num_classes', type=int, default=20)
     parser.add_argument('--latest', type=int, default=0,
                         help='load the latest model')
     parser.add_argument('--model_path', type=str, default='../../Output/SpineSegmentationC3D/latest.pkl')
@@ -43,12 +44,12 @@ if __name__ == '__main__':
 
     # setting.network is an object
     if args.model_type == 'C3D_base':
-        trainer.setting.network = Model(in_ch=1, out_ch=1,
+        trainer.setting.network = Model(in_ch=1, out_ch=args.num_class,
                                         list_ch_A=[-1, 16, 32, 64, 128, 256],
                                         list_ch_B=[-1, 32, 64, 128, 256, 512])
         print('Loading C3D_base !')
     else:
-        trainer.setting.network = Model(in_ch=1, out_ch=1,
+        trainer.setting.network = Model(in_ch=1, out_ch=args.num_class,
                                         list_ch_A=[-1, 16, 32, 64, 128, 256],
                                         list_ch_B=[-1, 16, 32, 64, 128, 256])
         print('Loading C3D_small !')

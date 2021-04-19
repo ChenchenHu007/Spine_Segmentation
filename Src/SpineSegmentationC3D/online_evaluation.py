@@ -21,13 +21,13 @@ def online_evaluation(trainer):
             list_images = pre_processing(dict_images)
 
             input_ = list_images[0]  # np.array
-            gt_mask = list_images[1]
+            gt_mask = list_images[1]  # (1, 16, 512, 512)
             # mask_original = list_images[2]
 
             # Forward
             [input_] = val_transform([input_])  # [input_] -> [torch.Tensor()]
-            input_ = input_.unsqueeze(0).to(trainer.setting.device)  # (1, 9, 128, 128, 128)
-            [_, prediction_B] = trainer.setting.network(input_)  # [output_A, output_B] -> prediction_B is output_B
+            input_ = input_.unsqueeze(0).to(trainer.setting.device)  # (1, 1, 16, 512, 512)
+            [_, prediction_B] = trainer.setting.network(input_)  # (1, 1, 16, 512, 512)
             prediction_B = np.array(prediction_B.cpu().data[0, :, :, :, :])
 
             # Post processing and evaluation

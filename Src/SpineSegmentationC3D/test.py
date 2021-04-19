@@ -124,15 +124,22 @@ if __name__ == "__main__":
                         default='../../Output/Spine_Segmentation_C3D/best_val_evaluation_index.pkl')
     parser.add_argument('--TTA', type=bool, default=True,
                         help='do test-time augmentation, default True')
+
+    parser.add_argument('--model_type', type=str, default='C3D_base')
     args = parser.parse_args()
 
     trainer = NetworkTrainer()
     trainer.setting.project_name = 'Spine_Segmentation_C3D'
     trainer.setting.output_dir = '../../Output/Spine_Segmentation_C3D'
 
-    trainer.setting.network = Model(in_ch=9, out_ch=1,
-                                    list_ch_A=[-1, 16, 32, 64, 128, 256],
-                                    list_ch_B=[-1, 32, 64, 128, 256, 512])  # list_ch_B=[-1, 32, 64, 128, 256, 512]
+    if args.model_type == 'C3D_base':
+        trainer.setting.network = Model(in_ch=1, out_ch=1,
+                                        list_ch_A=[-1, 16, 32, 64, 128, 256],
+                                        list_ch_B=[-1, 32, 64, 128, 256, 512])
+    else:
+        trainer.setting.network = Model(in_ch=1, out_ch=1,
+                                        list_ch_A=[-1, 16, 32, 64, 128, 256],
+                                        list_ch_B=[-1, 16, 32, 64, 128, 256])
 
     # Load model weights
     trainer.init_trainer(ckpt_file=args.model_path,
