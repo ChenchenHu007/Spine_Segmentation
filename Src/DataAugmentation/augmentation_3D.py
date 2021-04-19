@@ -31,7 +31,7 @@ def random_flip_3d(list_images, list_axis=(0, 1, 2), p=0.5):
 def random_rotate_around_z_axis(list_images,
                                 list_angles,
                                 list_interp,
-                                list_boder_value,
+                                list_border_value,
                                 p=0.5):
     if random.random() <= p:
         # Randomly pick an angle list_angles
@@ -49,7 +49,7 @@ def random_rotate_around_z_axis(list_images,
                                        M,
                                        (cols, rows),
                                        borderMode=cv2.BORDER_CONSTANT,
-                                       borderValue=list_boder_value[image_i],
+                                       borderValue=list_border_value[image_i],
                                        flags=list_interp[image_i])
     return list_images
 
