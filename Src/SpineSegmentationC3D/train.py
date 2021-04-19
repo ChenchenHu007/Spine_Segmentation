@@ -44,7 +44,7 @@ if __name__ == '__main__':
 
     # setting.network is an object
     if args.model_type == 'C3D_base':
-        trainer.setting.network = Model(in_ch=1, out_ch=args.num_class,
+        trainer.setting.network = Model(in_ch=1, out_ch=args.num_classes,
                                         list_ch_A=[-1, 16, 32, 64, 128, 256],
                                         list_ch_B=[-1, 32, 64, 128, 256, 512])
         print('Loading C3D_base !')
