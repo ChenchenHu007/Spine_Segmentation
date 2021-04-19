@@ -1,9 +1,9 @@
 """
-These file coyed from https://github.com/JunMa11/SegLoss/blob/master/losses_pytorch/ND_Crossentropy.py
+These file copied from https://github.com/JunMa11/SegLoss/blob/master/losses_pytorch/ND_Crossentropy.py
 """
 
 import torch
-from ND_Crossentropy import CrossentropyND, TopKLoss, WeightedCrossEntropyLoss
+from Loss.ND_Crossentropy import CrossentropyND, TopKLoss, WeightedCrossEntropyLoss
 from torch import nn
 from torch.autograd import Variable
 from torch import einsum
