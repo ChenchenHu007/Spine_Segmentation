@@ -48,8 +48,8 @@ def train_transform(list_images):
 
     # Random rotation
     list_images = random_rotate_around_z_axis(list_images,
-                                              list_angles=(0, 40, 80, 120, 160, 200, 240, 280, 320),
-                                              list_boder_value=(0, 0, 0),
+                                              list_angles=(0, 5, 10, 15, -5, -10, -15),
+                                              list_border_value=(0, 0, 0),
                                               list_interp=(cv2.INTER_NEAREST, cv2.INTER_NEAREST, cv2.INTER_NEAREST),
                                               p=0.3)
 
