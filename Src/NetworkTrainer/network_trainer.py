@@ -120,29 +120,29 @@ class NetworkTrainer:
                                                     eps=1e-08,
                                                     amsgrad=True)
 
-    def set_lr_scheduler(self, lr_scheduler_type, args):
+    def set_lr_scheduler(self, lr_scheduler_type, cfgs):
         if lr_scheduler_type == 'step':
             self.setting.lr_scheduler_type = 'step'
             self.setting.lr_scheduler = optim.lr_scheduler.MultiStepLR(self.setting.optimizer,
-                                                                       milestones=args['milestones'],
-                                                                       gamma=args['gamma'],
-                                                                       last_epoch=args['last_epoch']
+                                                                       milestones=cfgs['milestones'],
+                                                                       gamma=cfgs['gamma'],
+                                                                       last_epoch=cfgs['last_epoch']
                                                                        )
         elif lr_scheduler_type == 'cosine':
             self.setting.lr_scheduler_type = 'cosine'
             self.setting.lr_scheduler = optim.lr_scheduler.CosineAnnealingLR(self.setting.optimizer,
-                                                                             T_max=args['T_max'],
-                                                                             eta_min=args['eta_min'],
-                                                                             last_epoch=args['last_epoch']
+                                                                             T_max=cfgs['T_max'],
+                                                                             eta_min=cfgs['eta_min'],
+                                                                             last_epoch=cfgs['last_epoch']
                                                                              )
         elif lr_scheduler_type == 'ReduceLROnPlateau':
             self.setting.lr_scheduler_type = 'ReduceLROnPlateau'
             self.setting.lr_scheduler = optim.lr_scheduler.ReduceLROnPlateau(self.setting.optimizer,
                                                                              mode='min',
-                                                                             factor=args['factor'],
-                                                                             patience=args['patience'],
+                                                                             factor=cfgs['factor'],
+                                                                             patience=cfgs['patience'],
                                                                              verbose=True,
-                                                                             threshold=args['threshold'],
+                                                                             threshold=cfgs['threshold'],
                                                                              threshold_mode='rel',
                                                                              cooldown=0,
                                                                              min_lr=0,
