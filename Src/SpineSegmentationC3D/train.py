@@ -21,7 +21,6 @@ from loss import Loss
 if __name__ == '__main__':
 
     # added by ChenChen Hu
-    torch.manual_seed()
     print('This script has been modified by Chenchen Hu !')
 
     parser = argparse.ArgumentParser()
@@ -43,7 +42,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    torch.manual_seed(args.seed)
+    torch.manual_seed(seed=args.seed)
     random.seed(args.seed)
     np.random.seed(args.seed)
 
@@ -89,7 +88,7 @@ if __name__ == '__main__':
                           )
 
     trainer.set_lr_scheduler(lr_scheduler_type='cosine',
-                             args={
+                             cfgs={
                                  'T_max': args.max_iter,
                                  'eta_min': 1e-7,
                                  'last_epoch': -1
