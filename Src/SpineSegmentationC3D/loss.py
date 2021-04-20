@@ -7,7 +7,8 @@ class Loss(nn.Module):
     def __init__(self):
         super().__init__()
 
-        self.loss = DC_and_CE_loss()
+        # self.loss = DC_and_CE_loss()
+        self.loss = SoftDiceLoss()
 
     def forward(self, prediction, gt):
         pred_A = prediction[0]
