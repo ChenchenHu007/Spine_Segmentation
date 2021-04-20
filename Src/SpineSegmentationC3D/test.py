@@ -2,7 +2,8 @@
 import os
 import sys
 import argparse
-from tqdm import tqdm
+from utils.tools import one_hot_to_img
+# from tqdm import tqdm
 if os.path.abspath('..') not in sys.path:
     sys.path.insert(0, os.path.abspath('..'))
 
@@ -99,6 +100,7 @@ def inference(trainer, list_case_dirs, save_path, do_TTA=True):
             else:
                 TTA_mode = [[]]
             prediction = test_time_augmentation(trainer, input_, TTA_mode)
+            prediction = one_hot_to_img(prediction)
 
             # Pose-processing
             # prediction[np.logical_or(possible_dose_mask[0, :, :, :] < 1, prediction < 0)] = 0
