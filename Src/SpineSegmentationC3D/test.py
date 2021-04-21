@@ -38,9 +38,9 @@ def pre_processing(dict_images):
     MR = dict_images['MR']  # （0, 2500+）HU
     # MR = np.clip(MR, a_min=-1024)
     MR = MR / 1000.  # naive normalization
-    Mask = dict_images['Mask']
+    # Mask = dict_images['Mask']
 
-    list_images = [MR, Mask]
+    list_images = [MR]
 
     return list_images
 
