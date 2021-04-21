@@ -21,19 +21,19 @@ def online_evaluation(trainer):
             dict_images = read_data(case_dir)
             list_images = pre_processing(dict_images)
 
-            input_ = list_images[0]  # MR
+            input_ = list_images[0]  # MR (1, 16, 256, 256)
             gt_mask = list_images[1]  # Mask (1, 16, 256, 256)
             # mask_original = list_images[2]
 
             # Forward
-            [input_] = val_transform([input_])  # [input_] -> [torch.Tensor()]
+            [input_] = val_transform([input_])  # [input_] -> [torch.tensor()]
             input_ = input_.unsqueeze(0).to(trainer.setting.device)  # (1, 1, 16, 256, 256)
             [_, prediction_B] = trainer.setting.network(input_)  # tensor: (1, 20, 16, 256, 256)
             prediction_B = np.array(prediction_B.cpu().data[0, :, :, :, :])  # numpy: (20, 16, 256, 256)
-            prediction_B = one_hot_to_img(prediction_B)
+            prediction_B = one_hot_to_img(prediction_B)  # (16, 256, 256)
             # Post processing and evaluation
             # Post processing needed
-            Dice_score = cal_subject_level_dice(prediction_B, gt_mask)
+            Dice_score = cal_subject_level_dice(prediction_B, gt_mask[0])
             list_Dice_score.append(Dice_score)
 
             try:
@@ -46,5 +46,5 @@ def online_evaluation(trainer):
                                   + str(np.mean(list_Dice_score)), 'a')
     except:
         pass
-    # Evaluation score is the higher the better
+    # Evaluation score is the lower the better
     return - np.mean(list_Dice_score)
