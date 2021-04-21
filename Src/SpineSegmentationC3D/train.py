@@ -34,7 +34,7 @@ if __name__ == '__main__':
     parser.add_argument('--num_classes', type=int, default=20)
     parser.add_argument('--latest', type=int, default=0,
                         help='load the latest model')
-    parser.add_argument('--model_path', type=str, default='../../Output/SpineSegmentationC3D/latest.pkl')
+    parser.add_argument('--model_path', type=str, default='../../Output/Spine_Segmentation_C3D/latest.pkl')
     parser.add_argument('--model_type', type=str, default='C3D_base',
                         help='the type of C3D(C3D_base or C3D_small)')
     parser.add_argument('--seed', type=int, default=68,
