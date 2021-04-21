@@ -3,6 +3,7 @@ from DataLoader.dataloader_3D import val_transform, read_data, pre_processing
 from Evaluate.evaluate import *
 from model import *
 from utils.tools import one_hot_to_img
+from Loss.SegLoss.DiceLoss import SoftDiceLoss
 
 
 def online_evaluation(trainer):
@@ -30,10 +31,13 @@ def online_evaluation(trainer):
             input_ = input_.unsqueeze(0).to(trainer.setting.device)  # (1, 1, 16, 256, 256)
             [_, prediction_B] = trainer.setting.network(input_)  # tensor: (1, 20, 16, 256, 256)
             prediction_B = np.array(prediction_B.cpu().data[0, :, :, :, :])  # numpy: (20, 16, 256, 256)
-            prediction_B = one_hot_to_img(prediction_B)  # (16, 256, 256)
             # Post processing and evaluation
             # Post processing needed
-            Dice_score = cal_subject_level_dice(prediction_B, gt_mask[0])
+
+            # test needed
+            # prediction_B = one_hot_to_img(prediction_B)  # (16, 256, 256)
+            # Dice_score = cal_subject_level_dice(prediction_B, gt_mask[0])
+            Dice_score = SoftDiceLoss()(prediction_B, gt_mask)  # negative value
             list_Dice_score.append(Dice_score)
 
             try:
@@ -47,4 +51,4 @@ def online_evaluation(trainer):
     except:
         pass
     # Evaluation score is the lower the better
-    return - np.mean(list_Dice_score)
+    return np.mean(list_Dice_score)  # negative value

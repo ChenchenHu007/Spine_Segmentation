@@ -52,8 +52,8 @@ class TrainerLog:
         self.average_train_loss = 99999999.
         self.best_average_train_loss = 99999999.
         # Evaluation index is the higher the better
-        self.average_val_index = -99999999.
-        self.best_average_val_index = -99999999.
+        self.average_val_index = 99999999.
+        self.best_average_val_index = 99999999.
 
         # Record changes in training loss
         self.list_average_train_loss_associate_iter = []
