@@ -4,6 +4,8 @@ import sys
 import argparse
 
 # from tqdm import tqdm
+import numpy as np
+
 if os.path.abspath('..') not in sys.path:
     sys.path.insert(0, os.path.abspath('..'))
 
@@ -11,6 +13,7 @@ from Evaluate.evaluate import *
 from model import *
 from NetworkTrainer.network_trainer import *
 from utils.tools import one_hot_to_img
+from DataLoader.dataloader_3D import val_transform
 
 
 def read_data(case_dir):
@@ -81,7 +84,7 @@ def test_time_augmentation(trainer, input_, TTA_mode):
     return np.mean(list_prediction_B, axis=0)
 
 
-def inference(trainer, list_case_dirs, save_path, do_TTA=True):
+def inference(trainer, list_case_dirs, save_path, do_TTA=False):
     if not os.path.exists(save_path):
         os.mkdir(save_path)
 
@@ -97,20 +100,25 @@ def inference(trainer, list_case_dirs, save_path, do_TTA=True):
             # gt_mask = list_images[1]
 
             # Test-time augmentation
-            if do_TTA:
-                TTA_mode = [[], ['Z'], ['W'], ['Z', 'W']]
-            else:
-                TTA_mode = [[]]
-            prediction = test_time_augmentation(trainer, input_, TTA_mode)
-            prediction = one_hot_to_img(prediction)
+            # if do_TTA:
+            #     TTA_mode = [[], ['Z'], ['W'], ['Z', 'W']]
+            # else:
+            #     TTA_mode = [[]]
+            # prediction = test_time_augmentation(trainer, input_, TTA_mode)
+            # prediction = one_hot_to_img(prediction)
+            [input_] = val_transform([input_])  # [input_] -> [torch.tensor()]
+            input_ = input_.unsqueeze(0).to(trainer.setting.device)  # (1, 1, 16, 256, 256)
+            [_, prediction_B] = trainer.setting.network(input_)  # tensor: (1, 20, 16, 256, 256)
+            prediction_B = np.array(prediction_B.cpu().data[0, :, :, :, :])  # numpy: (20, 16, 256, 256)
+            prediction_B = one_hot_to_img(prediction_B)
 
             # Pose-processing
             # prediction[np.logical_or(possible_dose_mask[0, :, :, :] < 1, prediction < 0)] = 0
             # prediction = 70. * prediction
 
             # Save prediction to nii image
-            templete_nii = sitk.ReadImage(case_dir + '/Mask.nii.gz')
-            prediction_nii = sitk.GetImageFromArray(prediction)
+            templete_nii = sitk.ReadImage(case_dir + '/MR.nii.gz')
+            prediction_nii = sitk.GetImageFromArray(prediction_B)
             prediction_nii = copy_sitk_imageinfo(templete_nii, prediction_nii)
             if not os.path.exists(save_path + '/' + case_id):
                 os.mkdir(save_path + '/' + case_id)
