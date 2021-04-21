@@ -173,7 +173,7 @@ class NetworkTrainer:
 
         elif phase == 'val':
             self.log.average_val_index = loss
-            if loss > self.log.best_average_val_index:
+            if loss < self.log.best_average_val_index:
                 self.log.best_average_val_index = loss
                 self.log.save_status.append('best_val_evaluation_index')
             self.log.list_average_val_index_associate_iter.append([self.log.average_val_index, self.log.iter])
