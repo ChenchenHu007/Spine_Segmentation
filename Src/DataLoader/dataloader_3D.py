@@ -15,7 +15,7 @@ def read_data(case_dir):
 
     for img_name in list_MR_Mask:
         img = case_dir + '/' + img_name + '.nii.gz'
-        assert os.path.exists(img)
+        assert os.path.exists(img), case_dir + ' dont exist!'
 
         if img_name == 'MR':
             dtype = sitk.sitkFloat32
@@ -96,7 +96,7 @@ class SpineDataset(data.Dataset):
         list_images = pre_processing(dict_images)
 
         list_images = self.transform[self.phase](list_images)
-        return list_images
+        return list_images  # [MR, Mask]
 
     def __len__(self):
         return self.num_samples_per_epoch

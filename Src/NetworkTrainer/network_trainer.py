@@ -223,14 +223,14 @@ class NetworkTrainer:
             self.log.iter += 1
 
             # List_loader_output[0] default as the input
-            input_ = case[0]
-            target = case[1:]
+            input_ = case[0]  # tensor: (batch_size, C, D, H, W)
+            target = case[1:]  # tensor: (b, C, D, H, W)
 
             # Record time of preparing data
             self.time.train_loader_time_per_epoch += time.time() - time_start_load_data
 
             # Forward
-            output = self.forward(input_, phase='train')
+            output = self.forward(input_, phase='train')  # （b, num_classes, D, H, W）
 
             # Backward
             loss = self.backward(output, target)
