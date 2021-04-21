@@ -93,10 +93,10 @@ def inference(trainer, list_case_dirs, save_path, do_TTA=False):
         for case_dir in tqdm(list_case_dirs):
             case_id = case_dir.split('/')[-1]
 
-            dict_images = read_data(case_dir)
-            list_images = pre_processing(dict_images)
+            dict_images = read_data(case_dir)  # {'MR': MR_Image_array}
+            list_images = pre_processing(dict_images)  # [MR]
 
-            input_ = list_images[0]
+            input_ = list_images[0]  # tensor: (b==1, C, D, H, W)
             # gt_mask = list_images[1]
 
             # Test-time augmentation
@@ -154,6 +154,7 @@ if __name__ == "__main__":
                                         list_ch_B=[-1, 16, 32, 64, 128, 256])
 
     # Load model weights
+    print(args.model_path)
     trainer.init_trainer(ckpt_file=args.model_path,
                          list_GPU_ids=[args.GPU_id],
                          only_network=True)
