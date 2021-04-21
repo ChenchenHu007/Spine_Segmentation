@@ -135,11 +135,11 @@ if __name__ == "__main__":
     trainer.setting.output_dir = '../../Output/Spine_Segmentation_C3D'
 
     if args.model_type == 'C3D_base':
-        trainer.setting.network = Model(in_ch=1, out_ch=1,
+        trainer.setting.network = Model(in_ch=1, out_ch=20,
                                         list_ch_A=[-1, 16, 32, 64, 128, 256],
                                         list_ch_B=[-1, 32, 64, 128, 256, 512])
     else:
-        trainer.setting.network = Model(in_ch=1, out_ch=1,
+        trainer.setting.network = Model(in_ch=1, out_ch=20,
                                         list_ch_A=[-1, 16, 32, 64, 128, 256],
                                         list_ch_B=[-1, 16, 32, 64, 128, 256])
 
