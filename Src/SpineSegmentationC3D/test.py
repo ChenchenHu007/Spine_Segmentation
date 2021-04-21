@@ -153,7 +153,7 @@ if __name__ == "__main__":
     print('\n\n# Start inference !')
     Spine_Segmentation = '../../Data/Spine_Segmentation'
     cases = sorted(os.listdir(Spine_Segmentation))
-    list_case_dirs = [cases[i] for i in range(151, 172)]
+    list_case_dirs = [os.path.join(Spine_Segmentation, cases[i]) for i in range(151, 172)]
     inference(trainer, list_case_dirs, save_path=os.path.join(trainer.setting.output_dir, 'Prediction'),
               do_TTA=args.TTA)
 
