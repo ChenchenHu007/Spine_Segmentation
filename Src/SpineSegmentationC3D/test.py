@@ -15,7 +15,7 @@ from utils.tools import one_hot_to_img
 
 def read_data(case_dir):
     dict_images = {}
-    list_MR_Mask = ['MR', 'Mask']
+    list_MR_Mask = ['MR']
 
     for img_name in list_MR_Mask:
         img = case_dir + '/' + img_name + '.nii.gz'
@@ -28,6 +28,7 @@ def read_data(case_dir):
             dtype = sitk.sitkUInt8
 
         dict_images[img_name] = sitk.ReadImage(img, dtype)
+        dict_images[img_name] = sitk.GetArrayFromImage(dict_images[img_name])[np.newaxis, :, :, :]
 
     return dict_images
 
