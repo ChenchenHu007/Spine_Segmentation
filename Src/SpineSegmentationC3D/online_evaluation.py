@@ -7,6 +7,7 @@ from Loss.SegLoss.DiceLoss import SoftDiceLoss
 
 
 def online_evaluation(trainer):
+    # FIXME use val_loader
     Spine_Segmentation = '../../Data/Spine_Segmentation'
     cases = sorted(os.listdir(Spine_Segmentation))
     list_case_dirs = [os.path.join(Spine_Segmentation, cases[i]) for i in range(120, 151)]
@@ -30,13 +31,13 @@ def online_evaluation(trainer):
             [input_] = val_transform([input_])  # [input_] -> [torch.tensor()]
             input_ = input_.unsqueeze(0).to(trainer.setting.device)  # (1, 1, 16, 256, 256)
             [_, prediction_B] = trainer.setting.network(input_)  # tensor: (1, 20, 16, 256, 256)
-            prediction_B = np.array(prediction_B.cpu().data[0, :, :, :, :])  # numpy: (20, 16, 256, 256)
-            # Post processing and evaluation
-            # Post processing needed
 
-            # test needed
+            # Post processing and evaluation
+            # FIXME convert the prediction to img, Post processing needed
+            # prediction_B = np.array(prediction_B.cpu().data[0, :, :, :, :])  # numpy: (20, 16, 256, 256)
             # prediction_B = one_hot_to_img(prediction_B)  # (16, 256, 256)
             # Dice_score = cal_subject_level_dice(prediction_B, gt_mask[0])
+
             Dice_score = SoftDiceLoss()(prediction_B, gt_mask)  # negative value
             list_Dice_score.append(Dice_score)
 

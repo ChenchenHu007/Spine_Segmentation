@@ -173,7 +173,7 @@ class NetworkTrainer:
 
         elif phase == 'val':
             self.log.average_val_index = loss
-            if loss < self.log.best_average_val_index:
+            if loss < self.log.best_average_val_index:  # FIXME perhaps bug exists
                 self.log.best_average_val_index = loss
                 self.log.save_status.append('best_val_evaluation_index')
             self.log.list_average_val_index_associate_iter.append([self.log.average_val_index, self.log.iter])
@@ -216,6 +216,7 @@ class NetworkTrainer:
         count_iter = 0
 
         time_start_load_data = time.time()
+        # FIXME use tqdm ?
         for batch_idx, case in enumerate(self.setting.train_loader):
 
             if (self.setting.max_iter is not None) and (self.log.iter >= self.setting.max_iter - 1):
@@ -230,7 +231,7 @@ class NetworkTrainer:
             self.time.train_loader_time_per_epoch += time.time() - time_start_load_data
 
             # Forward
-            output = self.forward(input_, phase='train')  # （b, num_classes, D, H, W）
+            output = self.forward(input_, phase='train')  # tensor:（b, num_classes, D, H, W）
 
             # Backward
             loss = self.backward(output, target)
@@ -315,9 +316,9 @@ class NetworkTrainer:
                 '            Average val evaluation index is   %12.12f,     best is           %12.12f\n'
                 % (self.log.average_val_index, self.log.best_average_val_index), 'a')
 
-            self.print_log_to_file('    Train use time %12.5f\n' % (self.time.train_time_per_epoch), 'a')
-            self.print_log_to_file('    Train loader use time %12.5f\n' % (self.time.train_loader_time_per_epoch), 'a')
-            self.print_log_to_file('    Val use time %12.5f\n' % (self.time.val_time_per_epoch), 'a')
+            self.print_log_to_file('    Train use time %12.5f\n' % self.time.train_time_per_epoch, 'a')
+            self.print_log_to_file('    Train loader use time %12.5f\n' % self.time.train_loader_time_per_epoch, 'a')
+            self.print_log_to_file('    Val use time %12.5f\n' % self.time.val_time_per_epoch, 'a')
             self.print_log_to_file('    Total use time %12.5f\n' % (time.time() - time_start_this_epoch), 'a')
             self.print_log_to_file('    End lr is %12.12f, %12.12f\n' % (
                 self.setting.optimizer.param_groups[0]['lr'], self.setting.optimizer.param_groups[-1]['lr']), 'a')
