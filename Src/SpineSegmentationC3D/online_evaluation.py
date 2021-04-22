@@ -41,7 +41,7 @@ def online_evaluation(trainer):
             # Dice_score = cal_subject_level_dice(prediction_B, gt_mask[0])
 
             # FIXME
-            Dice_score = SoftDiceLoss()(prediction_B, gt_mask)  # negative value
+            Dice_score = SoftDiceLoss()(prediction_B, gt_mask).numpy()  # negative value
             list_Dice_score.append(Dice_score)
 
             try:

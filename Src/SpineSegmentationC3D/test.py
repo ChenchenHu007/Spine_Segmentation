@@ -111,7 +111,7 @@ def inference(trainer, list_case_dirs, save_path, do_TTA=False):
             input_ = input_.unsqueeze(0).to(trainer.setting.device)  # (1, 1, 16, 256, 256)
             [_, prediction_B] = trainer.setting.network(input_)  # tensor: (1, 20, 16, 256, 256)
             prediction_B = np.array(prediction_B.cpu().data[0, :, :, :, :])  # numpy: (20, 16, 256, 256)
-            # FIXME convert prediction (num_classes, C, D, H, W) to img (C ,D, H, W)
+            # FIXME convert prediction (1, num_classes, C, D, H, W) to img (1, C ,D, H, W)
             prediction_B = one_hot_to_img(prediction_B)
 
             # Pose-processing
