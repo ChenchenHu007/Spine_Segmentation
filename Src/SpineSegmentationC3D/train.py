@@ -28,8 +28,8 @@ if __name__ == '__main__':
                         help='batch size for training (default: 2)')
     parser.add_argument('--list_GPU_ids', nargs='+', type=int, default=0,
                         help='list_GPU_ids for training (default: 0)')
-    parser.add_argument('--max_iter',  type=int, default=80000,
-                        help='training iterations(default: 80000)')
+    parser.add_argument('--max_iter',  type=int, default=50000,
+                        help='training iterations(default: 50000)')
     # added by Chenchen Hu
     parser.add_argument('--num_classes', type=int, default=20)
     parser.add_argument('--latest', type=int, default=0,
@@ -69,7 +69,7 @@ if __name__ == '__main__':
     trainer.setting.train_loader, trainer.setting.val_loader = get_loader(  # -> data.DataLoader
         train_bs=args.batch_size,  # 2
         val_bs=1,
-        train_num_samples_per_epoch=args.batch_size * 500,  # 500 iterations per epoch => 1000 samples per epoch
+        train_num_samples_per_epoch=args.batch_size * 120,  # 120 iterations per epoch, b * 120 samples per epoch
         val_num_samples_per_epoch=1,
         num_works=8
     )
