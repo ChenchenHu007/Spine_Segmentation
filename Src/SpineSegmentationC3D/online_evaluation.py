@@ -22,9 +22,10 @@ def online_evaluation(trainer):
 
             dict_images = read_data(case_dir)
             list_images = pre_processing(dict_images)
+            list_images = val_transform(list_images)
 
-            input_ = list_images[0]  # MR (1, 16, 256, 256)
-            gt_mask = list_images[1]  # Mask (1, 16, 256, 256)
+            input_ = list_images[0]  # MR tensor: (1, 16, 256, 256)
+            gt_mask = list_images[1]  # Mask tensor: (1, 16, 256, 256)
             # mask_original = list_images[2]
 
             # Forward
