@@ -29,7 +29,7 @@ def online_evaluation(trainer):
             # mask_original = list_images[2]
 
             # Forward
-            [input_] = val_transform([input_])  # [input_] -> [torch.tensor()]
+            # [input_] = val_transform([input_])  # [input_] -> [torch.tensor()]
             input_ = input_.unsqueeze(0).to(trainer.setting.device)  # (1, 1, 16, 256, 256)
             [_, prediction_B] = trainer.setting.network(input_)  # tensor: (1, 20, 16, 256, 256)
 
@@ -39,6 +39,7 @@ def online_evaluation(trainer):
             # prediction_B = one_hot_to_img(prediction_B)  # (16, 256, 256)
             # Dice_score = cal_subject_level_dice(prediction_B, gt_mask[0])
 
+            # FIXME
             Dice_score = SoftDiceLoss()(prediction_B, gt_mask)  # negative value
             list_Dice_score.append(Dice_score)
 
