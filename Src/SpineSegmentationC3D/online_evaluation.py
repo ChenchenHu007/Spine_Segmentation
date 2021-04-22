@@ -22,15 +22,16 @@ def online_evaluation(trainer):
 
             dict_images = read_data(case_dir)
             list_images = pre_processing(dict_images)
-            list_images = val_transform(list_images)
+            list_images = val_transform(list_images)  # to tensor
 
-            input_ = list_images[0]  # MR tensor: (1, 16, 256, 256)
-            gt_mask = list_images[1]  # Mask tensor: (1, 16, 256, 256)
+            input_ = list_images[0].to(trainer.setting.device)  # MR tensor: (1, 16, 256, 256) 'cuda:0'
+            gt_mask = list_images[1].to(trainer.setting.device)   # Mask tensor: (1, 16, 256, 256) 'cuda:0'
             # mask_original = list_images[2]
 
             # Forward
             # [input_] = val_transform([input_])  # [input_] -> [torch.tensor()]
-            input_ = input_.unsqueeze(0).to(trainer.setting.device)  # (1, 1, 16, 256, 256)
+            input_ = input_.unsqueeze(0)  # (1, 1, 16, 256, 256)
+            gt_mask = gt_mask.unsqueeze(0)  # (1, 1, 16, 256, 256)
             [_, prediction_B] = trainer.setting.network(input_)  # tensor: (1, 20, 16, 256, 256)
 
             # Post processing and evaluation
