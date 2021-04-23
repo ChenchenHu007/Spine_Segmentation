@@ -78,8 +78,9 @@ def test_time_augmentation(trainer, input_, TTA_mode):
 
         # Aug back to original order
         prediction_B = flip_3d(np.array(prediction_B.cpu().data[0, :, :, :, :]), list_flip_axes)
+        # numpy: (num_classes, D, H, W)
 
-        list_prediction_B.append(prediction_B[0, :, :, :])
+        list_prediction_B.append(prediction_B)  # FIXME
 
     return np.mean(list_prediction_B, axis=0)
 
@@ -108,11 +109,12 @@ def inference(trainer, list_case_dirs, save_path, do_TTA=False):
             # prediction = test_time_augmentation(trainer, input_, TTA_mode)
             # prediction = one_hot_to_img(prediction)
             [input_] = val_transform([input_])  # [input_] -> [torch.tensor()]
-            input_ = input_.unsqueeze(0).to(trainer.setting.device)  # (1, 1, 16, 256, 256)
+            input_ = input_.unsqueeze(0).to(trainer.setting.device)  # tensor: (1, 1, 16, 256, 256)
             [_, prediction_B] = trainer.setting.network(input_)  # tensor: (1, 20, 16, 256, 256)
             prediction_B = np.array(prediction_B.cpu().data[0, :, :, :, :])  # numpy: (20, 16, 256, 256)
-            # FIXME convert prediction (1, num_classes, C, D, H, W) to img (1, C ,D, H, W)
-            prediction_B = one_hot_to_img(prediction_B)
+
+            # FIXME convert prediction (num_classes, C, D, H, W) to img (C ,D, H, W)
+            prediction_B = np.argmax(prediction_B, axis=0)
 
             # Pose-processing
             # prediction[np.logical_or(possible_dose_mask[0, :, :, :] < 1, prediction < 0)] = 0
@@ -121,7 +123,7 @@ def inference(trainer, list_case_dirs, save_path, do_TTA=False):
             # Save prediction to nii image
             templete_nii = sitk.ReadImage(case_dir + '/MR.nii.gz')
             prediction_nii = sitk.GetImageFromArray(prediction_B)
-            prediction_nii = copy_sitk_imageinfo(templete_nii, prediction_nii)  # FIXME
+            prediction_nii = copy_sitk_imageinfo(templete_nii, prediction_nii)  # FIXME  unknown bug exists
             if not os.path.exists(save_path + '/' + case_id):
                 os.mkdir(save_path + '/' + case_id)
             sitk.WriteImage(prediction_nii, save_path + '/' + case_id + '/pred_mask.nii.gz')

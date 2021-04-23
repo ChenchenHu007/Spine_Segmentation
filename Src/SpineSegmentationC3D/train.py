@@ -69,7 +69,7 @@ if __name__ == '__main__':
     trainer.setting.train_loader, trainer.setting.val_loader = get_loader(  # -> data.DataLoader
         train_bs=args.batch_size,  # 2
         val_bs=1,
-        train_num_samples_per_epoch=args.batch_size * 120,  # 120 iterations per epoch, b * 120 samples per epoch
+        train_num_samples_per_epoch=args.batch_size * 200,  # 200 iterations per epoch, b * 200 samples per epoch
         val_num_samples_per_epoch=1,
         num_works=8
     )
