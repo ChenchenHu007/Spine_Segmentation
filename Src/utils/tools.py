@@ -7,11 +7,13 @@ import torch
 import numpy as np
 
 
-def normalize(img, mean, std, eps=1e-4):
+def normalize(img, eps=1e-4):
     """
     Normalizes a given input tensor to be 0-mean and 1-std.
     mean and std parameter have to be provided explicitly.
     """
+    mean = np.mean(img)
+    std = np.std(img)
 
     return (img - mean) / (std + eps)
 
@@ -54,13 +56,3 @@ def expand_as_one_hot(input_, num_channels, ignore_index=None):
         # scatter to get the one-hot tensor
         return torch.zeros(shape).to(input_.device).scatter_(1, index, 1)
 
-
-def one_hot_to_img(img):
-    num_classes = img.shape[0]  # 20
-    img_ = np.zeros(img.shape[1:])  # (12, 256, 256)
-
-    for class_i in range(num_classes):
-
-        img_ = np.where(img[class_i] == 1, class_i, img_)
-
-    return img_
