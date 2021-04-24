@@ -12,7 +12,6 @@ if os.path.abspath('..') not in sys.path:
 from Evaluate.evaluate import *
 from model import *
 from NetworkTrainer.network_trainer import *
-from utils.tools import one_hot_to_img
 from DataLoader.dataloader_3D import val_transform
 
 
@@ -92,9 +91,10 @@ def inference(trainer, list_case_dirs, save_path, do_TTA=False):
     with torch.no_grad():
         trainer.setting.network.eval()
         for case_dir in tqdm(list_case_dirs):
+            assert os.path.exists(case_dir), case_dir + 'do not exist!'
             case_id = case_dir.split('/')[-1]
 
-            dict_images = read_data(case_dir)  # {'MR': MR_Image_array}
+            dict_images = read_data(case_dir)  # {'MR': MR_array}
             list_images = pre_processing(dict_images)  # [MR]
 
             input_ = list_images[0]  # tensor: (b==1, C, D, H, W)
@@ -113,12 +113,10 @@ def inference(trainer, list_case_dirs, save_path, do_TTA=False):
             [_, prediction_B] = trainer.setting.network(input_)  # tensor: (1, 20, 16, 256, 256)
             prediction_B = np.array(prediction_B.cpu().data[0, :, :, :, :])  # numpy: (20, 16, 256, 256)
 
-            # FIXME convert prediction (num_classes, C, D, H, W) to img (C ,D, H, W)
-            prediction_B = np.argmax(prediction_B, axis=0)
+            # FIXME convert prediction (num_classes, C, D, H, W) to img (1 ,D, H, W)
+            prediction_B = np.argmax(prediction_B, axis=0).astype(np.uint16)
 
-            # Pose-processing
-            # prediction[np.logical_or(possible_dose_mask[0, :, :, :] < 1, prediction < 0)] = 0
-            # prediction = 70. * prediction
+            # FIXME post-processing
 
             # Save prediction to nii image
             templete_nii = sitk.ReadImage(case_dir + '/MR.nii.gz')
