@@ -7,16 +7,21 @@ class Loss(nn.Module):
     def __init__(self):
         super().__init__()
 
-        # self.loss = DC_and_CE_loss()
-        self.loss = SoftDiceLoss()
+        self.dc_and_ce = DC_and_CE_loss(soft_dice_kwargs={'batch_dice': False,
+                                                          'do_bg': True,
+                                                          'smooth': 1.,
+                                                          'square': False},
+                                        ce_kwargs={})
+
+        # self.loss = SoftDiceLoss()
 
     def forward(self, prediction, gt):
         pred_A = prediction[0]  # tensor: (b, num_classes, D, H, W)
         pred_B = prediction[1]  # tensor: (b, num_classes, D, H, W)
         gt_mask = gt[0]  # tensor: (b, C, D, H, W)
 
-        pred_A_loss = self.loss(pred_A, gt_mask)  # negative value
-        pred_B_loss = self.loss(pred_B, gt_mask)  # negative value
+        pred_A_loss = self.dc_and_ce(pred_A, gt_mask)  # negative value
+        pred_B_loss = self.dc_and_ce(pred_B, gt_mask)  # negative value
 
         loss = 0.5 * pred_A_loss + pred_B_loss
 
