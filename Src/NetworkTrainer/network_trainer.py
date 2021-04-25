@@ -4,6 +4,7 @@ import time
 import torch
 import torch.nn as nn
 from torch import optim
+from tqdm import tqdm
 
 
 class TrainerSetting:
@@ -39,6 +40,10 @@ class TrainerSetting:
 
         # If do online evaluation during validation
         self.online_evaluation_function_val = None
+
+        # FIXME K-fold cross-validation
+        self.K_fold = None
+        self.num_samples_per_fold = None
 
 
 class TrainerLog:
@@ -173,7 +178,7 @@ class NetworkTrainer:
 
         elif phase == 'val':
             self.log.average_val_index = loss
-            if loss < self.log.best_average_val_index:  # FIXME perhaps bug exists
+            if loss < self.log.best_average_val_index:
                 self.log.best_average_val_index = loss
                 self.log.save_status.append('best_val_evaluation_index')
             self.log.list_average_val_index_associate_iter.append([self.log.average_val_index, self.log.iter])
@@ -216,8 +221,8 @@ class NetworkTrainer:
         count_iter = 0
 
         time_start_load_data = time.time()
-        # FIXME use tqdm ?
-        for batch_idx, case in enumerate(self.setting.train_loader):
+
+        for batch_idx, case in tqdm(enumerate(self.setting.train_loader)):
 
             if (self.setting.max_iter is not None) and (self.log.iter >= self.setting.max_iter - 1):
                 break
@@ -225,14 +230,14 @@ class NetworkTrainer:
 
             # List_loader_output[0] default as the input
             input_ = case[0]  # tensor: (batch_size, C, D, H, W)
-            target = case[1:]  # tensor: (b, C, D, H, W)
+            target = case[1:]  # tensor: (b, C, D, H, W)  # FIXME target_A, target_B
 
             # Record time of preparing data
             self.time.train_loader_time_per_epoch += time.time() - time_start_load_data
 
             # Forward
-            output = self.forward(input_, phase='train')  # tensor:（b, num_classes, D, H, W）
-
+            output = self.forward(input_, phase='train')  # tensor:（b, num_classes, D, H, W） [pred_A, pred_B]
+            # FIXME interpolation
             # Backward
             loss = self.backward(output, target)
 
