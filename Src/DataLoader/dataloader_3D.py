@@ -5,6 +5,8 @@ import numpy as np
 import random
 import cv2
 
+from utils.tools import normalize
+
 from DataAugmentation.augmentation_3D import \
     random_flip_3d, random_rotate_around_z_axis, random_translate, to_tensor
 
@@ -15,13 +17,13 @@ def read_data(case_dir):
 
     for img_name in list_MR_Mask:
         img = case_dir + '/' + img_name + '.nii.gz'
-        assert os.path.exists(img), case_dir + ' dont exist!'
+        assert os.path.exists(img), case_dir + ' do not exist!'
 
         if img_name == 'MR':
             dtype = sitk.sitkFloat32
 
         else:
-            dtype = sitk.sitkUInt8
+            dtype = sitk.sitkUInt16
 
         dict_images[img_name] = sitk.ReadImage(img, dtype)
         dict_images[img_name] = sitk.GetArrayFromImage(dict_images[img_name])[np.newaxis, :, :, :]
@@ -33,7 +35,7 @@ def pre_processing(dict_images):
 
     MR = dict_images['MR']  # （0, 2500+）HU
     # MR = np.clip(MR, a_min=-1024)
-    MR = MR / 1000.  # naive normalization
+    MR = normalize(MR)
     Mask = dict_images['Mask']
 
     list_images = [MR, Mask]
