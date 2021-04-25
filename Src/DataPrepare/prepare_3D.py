@@ -6,7 +6,7 @@ from shutil import copyfile
 from scipy.ndimage import zoom
 
 
-def resize_image(image, dsize=(16, 256, 256)):
+def resize_image(image, dsize=(16, 256, 256), order=3):
     """
     resizes for each slice then adds zeros slice to dsize[0]
     image:sitk.SimpleITK.Image
@@ -22,7 +22,7 @@ def resize_image(image, dsize=(16, 256, 256)):
     else:
         dsize_ = np.array([original_size[0], dsize[1], dsize[2]])
     resize_factor = dsize_ / original_size
-    image = zoom(image, resize_factor)
+    image = zoom(image, resize_factor, order=order)
     for i in range(dsize[0] - original_size[0]):
         if not i % 2:
             image = np.concatenate((np.zeros((1, dsize[1], dsize[2])), image), axis=0)
@@ -58,30 +58,6 @@ def resize_image_sitk(image, dsize=(256, 256, 16)):  # note that order in sitk i
     return image_
 
 
-# def FileTreeRefactor():
-#
-#     MRs = glob(os.path.join(MR_path, '*.nii.gz'))
-#     Masks = glob(os.path.join(Mask_path, '*.nii.gz'))
-#
-#     for i in range(len(MRs)):
-#         case_index = MRs[i].split('/')[-1].split('.nii.gz')[0]
-#         case_dir = os.path.join(Spine_Segmentation, case_index)
-#
-#         if not os.path.exists(case_dir):
-#             os.mkdir(case_dir)
-#
-#         os.rename(MRs[i], os.path.join(case_dir, 'MR.nii.gz'))
-#
-#     for i in range(len(Masks)):
-#         case_index = Masks[i].split('/')[-1].split('.nii.gz')[0].split('mask_case')[-1]
-#         case_index = 'Case' + case_index
-#         case_dir = os.path.join(Spine_Segmentation, case_index)
-#
-#         assert os.path.exists(case_dir)
-#
-#         os.rename(Masks[i], os.path.join(case_dir, 'Mask.nii.gz'))
-
-
 if __name__ == '__main__':
 
     train_path = '../../Data/train'
@@ -94,14 +70,18 @@ if __name__ == '__main__':
     if not os.path.exists(Spine_Segmentation):
         os.mkdir(Spine_Segmentation)
 
+    # FIXME resize and crop
     for MR in MRs:
         case_id = MR.split('.nii.gz')[0]  # Case*
         case_path = os.path.join(MR_path, MR)  #
         dst_path = os.path.join(Spine_Segmentation, case_id)
         if not os.path.exists(dst_path):
             os.mkdir(dst_path)
+
+        copyfile(case_path, os.path.join(dst_path, 'MR_raw.nii.gz'))
+
         img = sitk.ReadImage(case_path)
-        img, _ = resize_image(img, dsize=(16, 256, 256))
+        img, _ = resize_image(img, dsize=(16, 256, 256), order=3)
         img = sitk.GetImageFromArray(img)
         sitk.WriteImage(img, dst_path + '/' + 'MR.nii.gz')
 
@@ -113,19 +93,15 @@ if __name__ == '__main__':
         dst_path = os.path.join(Spine_Segmentation, case_id)
         if not os.path.exists(dst_path):
             os.mkdir(dst_path)
+
+        copyfile(case_path, os.path.join(dst_path, 'Mask_raw.nii.gz'))
+
         img = sitk.ReadImage(case_path)
-        img, num_classes = resize_image(img, dsize=(16, 256, 256))
+        img, num_classes = resize_image(img, dsize=(16, 256, 256), order=0)
         img = img.astype(np.uint16)
         img = np.where(img > num_classes, num_classes, img)
         img = np.where(img < 0, 0, img)
         img = sitk.GetImageFromArray(img)
         sitk.WriteImage(img, dst_path + '/' + 'Mask.nii.gz')
-
-    for Mask in Masks:
-        case_id = 'Case' + Mask.split('.nii.gz')[0].split('mask_case')[-1]
-        case_path = os.path.join(Spine_Segmentation, case_id)
-        src = os.path.join(Mask_path, Mask)
-        dst = os.path.join(case_path, 'Mask_original.nii.gz')
-        copyfile(src, dst)
 
     print('Done!')
