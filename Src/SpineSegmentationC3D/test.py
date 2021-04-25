@@ -114,7 +114,7 @@ def inference(trainer, list_case_dirs, save_path, do_TTA=False):
             prediction_B = np.array(prediction_B.cpu().data[0, :, :, :, :])  # numpy: (20, 16, 256, 256)
 
             # FIXME convert prediction (num_classes, C, D, H, W) to img (1 ,D, H, W)
-            prediction_B = np.argmax(prediction_B, axis=0).astype(np.uint16)
+            prediction_B = np.argmax(prediction_B, axis=0).astype(np.int16)
 
             # FIXME post-processing
 

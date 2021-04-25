@@ -23,7 +23,7 @@ def read_data(case_dir):
             dtype = sitk.sitkFloat32
 
         else:
-            dtype = sitk.sitkUInt16
+            dtype = sitk.sitkInt16
 
         dict_images[img_name] = sitk.ReadImage(img, dtype)
         dict_images[img_name] = sitk.GetArrayFromImage(dict_images[img_name])[np.newaxis, :, :, :]
@@ -104,7 +104,7 @@ class SpineDataset(data.Dataset):
         return self.num_samples_per_epoch
 
 
-def get_loader(train_bs=1, val_bs=1, train_num_samples_per_epoch=1, val_num_samples_per_epoch=1, num_works=2):
+def get_loader(train_bs=1, val_bs=1, train_num_samples_per_epoch=1, val_num_samples_per_epoch=1, num_works=4):
     train_dataset = SpineDataset(num_samples_per_epoch=train_num_samples_per_epoch, phase='train')
     val_dataset = SpineDataset(num_samples_per_epoch=val_num_samples_per_epoch, phase='val')
 

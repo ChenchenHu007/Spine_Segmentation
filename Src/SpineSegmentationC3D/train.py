@@ -71,7 +71,7 @@ if __name__ == '__main__':
         val_bs=1,
         train_num_samples_per_epoch=args.batch_size * 200,  # 200 iterations per epoch, b * 200 samples per epoch
         val_num_samples_per_epoch=1,
-        num_works=8
+        num_works=4
     )
 
     trainer.setting.eps_train_loss = 0.01

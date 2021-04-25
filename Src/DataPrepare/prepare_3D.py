@@ -98,7 +98,7 @@ if __name__ == '__main__':
 
         img = sitk.ReadImage(case_path)
         img, num_classes = resize_image(img, dsize=(16, 256, 256), order=0)
-        img = img.astype(np.uint16)
+        img = img.astype(np.int16)
         img = np.where(img > num_classes, num_classes, img)
         img = np.where(img < 0, 0, img)
         img = sitk.GetImageFromArray(img)
