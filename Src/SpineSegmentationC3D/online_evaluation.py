@@ -2,7 +2,6 @@
 from DataLoader.dataloader_3D import val_transform, read_data, pre_processing
 from Evaluate.evaluate import *
 from model import *
-from utils.tools import one_hot_to_img
 from Loss.SegLoss.DiceLoss import SoftDiceLoss
 
 
@@ -40,7 +39,6 @@ def online_evaluation(trainer):
             # prediction_B = one_hot_to_img(prediction_B)  # (16, 256, 256)
             # Dice_score = cal_subject_level_dice(prediction_B, gt_mask[0])
 
-            # FIXME
             Dice_score = SoftDiceLoss()(prediction_B, gt_mask).cpu().numpy()  # negative value
             list_Dice_score.append(Dice_score)
 
