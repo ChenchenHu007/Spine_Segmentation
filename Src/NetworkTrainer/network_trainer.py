@@ -237,7 +237,7 @@ class NetworkTrainer:
 
             # Forward
             output = self.forward(input_, phase='train')  # tensor:（b, num_classes, D, H, W） [pred_A, pred_B]
-            # FIXME interpolation
+            # FIXME post_processing needed
             # Backward
             loss = self.backward(output, target)
 
@@ -251,7 +251,7 @@ class NetworkTrainer:
             # Print loss during the first epoch
             if self.log.epoch == 0:
                 if self.log.iter % 10 == 0:
-                    self.print_log_to_file('                Iter %12d       %12.5f\n' %
+                    self.print_log_to_file('\nIter %12d       %12.5f\n' %
                                            (self.log.iter, self.log.moving_train_loss), 'a')
 
             time_start_load_data = time.time()
