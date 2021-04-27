@@ -13,7 +13,7 @@ from Evaluate.evaluate import *
 from model import *
 from NetworkTrainer.network_trainer import *
 from DataLoader.dataloader_3D import val_transform
-from utils.processing import resize_slice, remove_padding_z
+from utils.processing import resize_3Dimage, remove_padding_z, pad_to_size, normalize
 
 
 def read_data(case_dir):
@@ -38,9 +38,9 @@ def read_data(case_dir):
 
 def pre_processing(dict_images):
 
-    MR = dict_images['MR']  # （0, 2500+）HU
+    MR = dict_images['MR']
     # MR = np.clip(MR, a_min=-1024)
-    MR = MR / 1000.  # naive normalization
+    MR = normalize(MR)  # normalization
     # Mask = dict_images['Mask']
 
     list_images = [MR]
@@ -110,18 +110,20 @@ def inference(trainer, list_case_dirs, save_path, do_TTA=False):
             # prediction = test_time_augmentation(trainer, input_, TTA_mode)
             # prediction = one_hot_to_img(prediction)
             [input_] = val_transform([input_])  # [input_] -> [torch.tensor()]
-            input_ = input_.unsqueeze(0).to(trainer.setting.device)  # tensor: (1, 1, 16, 256, 256)
-            [_, prediction_B] = trainer.setting.network(input_)  # tensor: (1, 20, 16, 256, 256)
-            prediction_B = np.array(prediction_B.cpu())  # numpy: (1, 20, 16, 256, 256)
+            input_ = input_.unsqueeze(0).to(trainer.setting.device)  # tensor: (1, 1, 16, 256, 128)
+            [_, prediction_B] = trainer.setting.network(input_)  # tensor: (1, 20, 16, 256, 128)
+            prediction_B = np.array(prediction_B.cpu())  # numpy: (1, 20, 16, 256, 128)
 
-            prediction_B = np.argmax(prediction_B, axis=1).astype(np.int16)  # (1, 16, 256, 256)
+            prediction_B = np.argmax(prediction_B, axis=1).astype(np.int16)  # (1, 16, 256, 128)
             # FIXME post-processing
 
             # Save prediction to nii image
             templete_nii = sitk.ReadImage(case_dir + '/raw_MR.nii.gz')
             target_size = templete_nii.GetSize()[::-1]  # (D, H, W)
             prediction_B = remove_padding_z(prediction_B, target_z=target_size[0])
-            prediction_B = resize_slice(prediction_B[0], dsize=target_size[1:])
+            C, D, H, W = prediction_B.shape
+            prediction_B = pad_to_size(prediction_B, dsize=(C, D, H, W * 2))
+            prediction_B = resize_3Dimage(prediction_B[0], dsize=target_size[1:])
 
             prediction_nii = sitk.GetImageFromArray(prediction_B)
             prediction_nii = copy_sitk_imageinfo(templete_nii, prediction_nii)
