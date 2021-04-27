@@ -18,7 +18,9 @@ class Loss(nn.Module):
     def forward(self, prediction, gt):
         pred_A = prediction[0]  # tensor: (b, num_classes, D, H, W)
         pred_B = prediction[1]  # tensor: (b, num_classes, D, H, W)
-        gt_mask = gt[0]  # tensor: (b, C, D, H, W)
+        gt_mask = gt[0]
+        # gt_A = gt[0]  # tensor: (b, C, D, H, W)
+        # gt_B = gt[1]
 
         pred_A_loss = self.dc_and_ce(pred_A, gt_mask)  # negative value
         pred_B_loss = self.dc_and_ce(pred_B, gt_mask)  # negative value
