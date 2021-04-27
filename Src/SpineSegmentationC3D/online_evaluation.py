@@ -56,7 +56,7 @@ def online_evaluation(trainer):
         trainer.print_log_to_file('===============================================> mean SoftDice score: '
                                   + str(np.mean(list_SoftDice_score)), 'a')
         trainer.print_log_to_file('===============================================> mean subject_level_dice score: '
-                                  + str(np.mean(list_subject_level_dice_score)), 'a')
+                                  + str(-np.mean(list_subject_level_dice_score)), 'a')
     except:
         pass
     # Evaluation score is the lower the better
