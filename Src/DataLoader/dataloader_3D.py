@@ -5,7 +5,7 @@ import numpy as np
 import random
 import cv2
 
-from utils.tools import normalize
+from utils.processing import normalize, crop
 
 from DataAugmentation.augmentation_3D import \
     random_flip_3d, random_rotate_around_z_axis, random_translate, to_tensor
@@ -33,12 +33,16 @@ def read_data(case_dir):
 
 def pre_processing(dict_images):
 
-    MR = dict_images['MR']  # （0, 2500+）HU
-    # MR = np.clip(MR, a_min=-1024)
+    MR = dict_images['MR']
+    _, D, H, W = MR.shape
+    MR = crop(MR, start=int(W / 4), end=-int(W / 4), axis='W')
     MR = normalize(MR)
     Mask = dict_images['Mask']
+    Mask = crop(Mask, start=int(W / 4), end=-int(W / 4), axis='W')
 
-    list_images = [MR, Mask]
+    # raw_Mask = dict_images['raw_Mask']
+
+    list_images = [MR, Mask]  # (C, D, H, W) or (C, z, y, x)
 
     return list_images
 
@@ -56,11 +60,11 @@ def train_transform(list_images):
                                               p=0.3)
 
     # Random translation, but make use the region can receive dose is remained
-    list_images = random_translate(list_images,  # [MR, Mask]
-                                   mask=list_images[1][0, :, :, :],  # Mask
-                                   p=0.8,
-                                   max_shift=20,
-                                   list_pad_value=[0, 0, 0])
+    # list_images = random_translate(list_images,  # [MR, Mask]
+    #                                mask=list_images[1][0, :, :, :],  # Mask
+    #                                p=0.8,
+    #                                max_shift=20,
+    #                                list_pad_value=[0, 0, 0])
 
     # To torch tensor
     list_images = to_tensor(list_images)
