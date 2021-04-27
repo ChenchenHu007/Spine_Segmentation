@@ -112,16 +112,16 @@ def inference(trainer, list_case_dirs, save_path, do_TTA=False):
             [input_] = val_transform([input_])  # [input_] -> [torch.tensor()]
             input_ = input_.unsqueeze(0).to(trainer.setting.device)  # tensor: (1, 1, 16, 256, 256)
             [_, prediction_B] = trainer.setting.network(input_)  # tensor: (1, 20, 16, 256, 256)
-            prediction_B = np.array(prediction_B.cpu().data[0, :, :, :, :])  # numpy: (20, 16, 256, 256)
+            prediction_B = np.array(prediction_B.cpu())  # numpy: (1, 20, 16, 256, 256)
 
-            prediction_B = np.argmax(prediction_B, axis=0).astype(np.int16)  # (16, 256, 256)
+            prediction_B = np.argmax(prediction_B, axis=1).astype(np.int16)  # (1, 16, 256, 256)
             # FIXME post-processing
 
             # Save prediction to nii image
             templete_nii = sitk.ReadImage(case_dir + '/raw_MR.nii.gz')
-            target_size = templete_nii.GetSize()[::-1]
+            target_size = templete_nii.GetSize()[::-1]  # (x, y, z)
             prediction_B = remove_padding_z(prediction_B, target_z=target_size[-1])
-            prediction_B = resize_image(prediction_B, dsize=target_size)
+            prediction_B = resize_image(prediction_B[0], dsize=target_size[::-1])
 
             prediction_nii = sitk.GetImageFromArray(prediction_B)
             prediction_nii = copy_sitk_imageinfo(templete_nii, prediction_nii)
