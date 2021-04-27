@@ -40,6 +40,7 @@ def online_evaluation(trainer):
             # Post processing and evaluation
             # FIXME convert the prediction to img, Post processing needed
             prediction_B = np.array(prediction_B.cpu())  # numpy: (1, 20, 16, H, W)
+            gt_mask = np.array(gt_mask.cpu())
             prediction_B = np.argmax(prediction_B, axis=1).astype(np.int16)  # (1, 16, H, W)
             subject_level_dice_score = cal_subject_level_dice(prediction_B[0], gt_mask[0][0])  # positive value
             list_subject_level_dice_score.append(subject_level_dice_score)
