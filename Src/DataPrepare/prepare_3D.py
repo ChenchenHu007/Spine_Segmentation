@@ -1,6 +1,5 @@
 import os
 import numpy as np
-from glob import glob
 import SimpleITK as sitk
 from shutil import copyfile
 from scipy.ndimage import zoom
@@ -78,7 +77,7 @@ if __name__ == '__main__':
         if not os.path.exists(dst_path):
             os.mkdir(dst_path)
 
-        copyfile(case_path, os.path.join(dst_path, 'MR_raw.nii.gz'))
+        copyfile(case_path, os.path.join(dst_path, 'raw_MR.nii.gz'))
 
         img = sitk.ReadImage(case_path)
         img, _ = resize_image(img, dsize=(16, 256, 256), order=3)
@@ -94,7 +93,7 @@ if __name__ == '__main__':
         if not os.path.exists(dst_path):
             os.mkdir(dst_path)
 
-        copyfile(case_path, os.path.join(dst_path, 'Mask_raw.nii.gz'))
+        copyfile(case_path, os.path.join(dst_path, 'raw_Mask.nii.gz'))
 
         img = sitk.ReadImage(case_path)
         img, num_classes = resize_image(img, dsize=(16, 256, 256), order=0)
