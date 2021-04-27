@@ -4,7 +4,7 @@ import SimpleITK as sitk
 from tqdm import tqdm
 
 """
-These codes are modified from https://github.com/ababier/open-kbp
+These codes are modified from https://www.spinesegmentation-challenge.com/?page_id=34
 """
 
 
