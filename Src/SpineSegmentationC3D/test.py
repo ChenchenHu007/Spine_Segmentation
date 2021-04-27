@@ -13,7 +13,7 @@ from Evaluate.evaluate import *
 from model import *
 from NetworkTrainer.network_trainer import *
 from DataLoader.dataloader_3D import val_transform
-from utils.processing import resize_image, remove_padding_z
+from utils.processing import resize_slice, remove_padding_z
 
 
 def read_data(case_dir):
@@ -119,9 +119,9 @@ def inference(trainer, list_case_dirs, save_path, do_TTA=False):
 
             # Save prediction to nii image
             templete_nii = sitk.ReadImage(case_dir + '/raw_MR.nii.gz')
-            target_size = templete_nii.GetSize()[::-1]  # (x, y, z)
-            prediction_B = remove_padding_z(prediction_B, target_z=target_size[-1])
-            prediction_B = resize_image(prediction_B[0], dsize=target_size[::-1])
+            target_size = templete_nii.GetSize()[::-1]  # (D, H, W)
+            prediction_B = remove_padding_z(prediction_B, target_z=target_size[0])
+            prediction_B = resize_slice(prediction_B[0], dsize=target_size[1:])
 
             prediction_nii = sitk.GetImageFromArray(prediction_B)
             prediction_nii = copy_sitk_imageinfo(templete_nii, prediction_nii)

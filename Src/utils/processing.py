@@ -16,7 +16,7 @@ def normalize(img, eps=1e-4):
     return (img - mean) / (std + eps)
 
 
-def resize_image(img, dsize):
+def resize_slice(img, dsize):
     """
     :param img: numpy array, shape of (C, D, H, W)
     """
@@ -25,7 +25,7 @@ def resize_image(img, dsize):
     else:
         _, D, H, W = img.shape
 
-    img_ = np.empty(img.shape)
+    img_ = np.empty((D, dsize[0], dsize[1]))
     for slice_i in range(D):
         img_[slice_i] = cv2.resize(img[slice_i], dsize=dsize, interpolation=cv2.INTER_NEAREST)
 
