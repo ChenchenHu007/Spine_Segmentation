@@ -1,4 +1,3 @@
-import numpy
 import torch
 import numpy as np
 import math
@@ -8,7 +7,6 @@ import cv2
 def normalize(img, eps=1e-4):
     """
     Normalizes a given input tensor to be 0-mean and 1-std.
-    mean and std parameter have to be provided explicitly.
     """
     mean = np.mean(img)
     std = np.std(img)
@@ -16,10 +14,13 @@ def normalize(img, eps=1e-4):
     return (img - mean) / (std + eps)
 
 
-def resize_3Dimage(img, dsize):
+def resize_3Dimage(img, dsize, mode='nearest'):
     """
     :param img: numpy array, shape of (C, D, H, W)
     """
+    interpolation = {'nearest': cv2.INTER_NEAREST, 'linear': cv2.INTER_LINEAR, 'area': cv2.INTER_AREA,
+                     'cubic': cv2.INTER_CUBIC}
+    assert mode in interpolation.keys(), 'only support nearest, linear, area and cubic.'
     if len(img.shape) == 3:
         D, H, W = img.shape
     else:
@@ -27,7 +28,7 @@ def resize_3Dimage(img, dsize):
 
     img_ = np.empty((D, dsize[0], dsize[1]))
     for slice_i in range(D):
-        img_[slice_i] = cv2.resize(img[slice_i], dsize=dsize, interpolation=cv2.INTER_NEAREST)
+        img_[slice_i] = cv2.resize(img[slice_i], dsize=dsize, interpolation=interpolation[mode])
 
     return img_
 
@@ -60,7 +61,7 @@ def pad_to_size(img, dsize):
     :param img: (C, D, H, W) or (C, z, y, x)
     :param dsize: 3D (D, H, W) or 4D (C, D, H, W)
     """
-    assert len(dsize) == 3 or len(dsize) == 4, 'invalid dsize, only 3D or 4D'
+    assert len(dsize) == 3 or len(dsize) == 4, 'invalid dsize, only 3D or 4D supported.'
     _, ori_z, ori_h, ori_w = img.shape
 
     if len(dsize) == 3:
