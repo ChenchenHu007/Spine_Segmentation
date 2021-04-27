@@ -2,6 +2,7 @@
 import os
 import sys
 import argparse
+from utils.processing import resize_image, remove_padding_z
 
 # from tqdm import tqdm
 import numpy as np
@@ -113,15 +114,17 @@ def inference(trainer, list_case_dirs, save_path, do_TTA=False):
             [_, prediction_B] = trainer.setting.network(input_)  # tensor: (1, 20, 16, 256, 256)
             prediction_B = np.array(prediction_B.cpu().data[0, :, :, :, :])  # numpy: (20, 16, 256, 256)
 
-            # FIXME convert prediction (num_classes, C, D, H, W) to img (1 ,D, H, W)
-            prediction_B = np.argmax(prediction_B, axis=0).astype(np.int16)
-
+            prediction_B = np.argmax(prediction_B, axis=0).astype(np.int16)  # (16, 256, 256)
             # FIXME post-processing
 
             # Save prediction to nii image
-            templete_nii = sitk.ReadImage(case_dir + '/MR.nii.gz')
+            templete_nii = sitk.ReadImage(case_dir + '/raw_MR.nii.gz')
+            target_size = templete_nii.GetSize()[::-1]
+            prediction_B = remove_padding_z(prediction_B, target_z=target_size[-1])
+            prediction_B = resize_image(prediction_B, dsize=target_size)
+
             prediction_nii = sitk.GetImageFromArray(prediction_B)
-            prediction_nii = copy_sitk_imageinfo(templete_nii, prediction_nii)  # FIXME  unknown bug exists
+            prediction_nii = copy_sitk_imageinfo(templete_nii, prediction_nii)
             if not os.path.exists(save_path + '/' + case_id):
                 os.mkdir(save_path + '/' + case_id)
             sitk.WriteImage(prediction_nii, save_path + '/' + case_id + '/pred_mask.nii.gz')
