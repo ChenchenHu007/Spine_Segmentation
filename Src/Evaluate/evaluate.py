@@ -47,7 +47,7 @@ def evaluate_demo(prediction_dir, gt_dir):
         pred_mask = sitk.ReadImage(os.path.join(prediction_dir, case_id, 'pred_mask.nii.gz'))
         pred = sitk.GetArrayFromImage(pred_mask)
 
-        gt_mask = sitk.ReadImage(os.path.join(gt_dir, case_id, 'Mask.nii.gz'))
+        gt_mask = sitk.ReadImage(os.path.join(gt_dir, case_id, 'raw_Mask.nii.gz'))
         gt = sitk.GetArrayFromImage(gt_mask)
 
         dsc = cal_subject_level_dice(pred, gt, num_classes=20)
