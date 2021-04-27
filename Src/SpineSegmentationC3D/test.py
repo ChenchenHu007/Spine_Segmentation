@@ -2,7 +2,6 @@
 import os
 import sys
 import argparse
-from utils.processing import resize_image, remove_padding_z
 
 # from tqdm import tqdm
 import numpy as np
@@ -14,6 +13,7 @@ from Evaluate.evaluate import *
 from model import *
 from NetworkTrainer.network_trainer import *
 from DataLoader.dataloader_3D import val_transform
+from utils.processing import resize_image, remove_padding_z
 
 
 def read_data(case_dir):
