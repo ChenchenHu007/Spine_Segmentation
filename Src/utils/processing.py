@@ -16,7 +16,7 @@ def normalize(img, eps=1e-4):
     return (img - mean) / (std + eps)
 
 
-def resize_slice(img, dsize):
+def resize_3Dimage(img, dsize):
     """
     :param img: numpy array, shape of (C, D, H, W)
     """
