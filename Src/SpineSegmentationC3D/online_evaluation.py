@@ -47,7 +47,7 @@ def online_evaluation(trainer):
 
             try:
                 trainer.print_log_to_file('========> ' + case_id + ':  ' + 'SoftDice: ' + str(SoftDice_score) +
-                                          'subject_level_dice_score: ' + str(subject_level_dice_score),
+                                          ', subject_level_dice_score: ' + str(subject_level_dice_score),
                                           'a')
             except:
                 pass
