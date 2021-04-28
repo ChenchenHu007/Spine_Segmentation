@@ -13,7 +13,7 @@ from Evaluate.evaluate import *
 from model import *
 from NetworkTrainer.network_trainer import *
 from DataLoader.dataloader_3D import val_transform
-from utils.processing import resize_3Dimage, remove_padding_z, pad_to_size, normalize
+from utils.processing import resize_3Dimage, remove_padding_z, pad_to_size, normalize, crop
 
 
 def read_data(case_dir):
@@ -40,6 +40,8 @@ def pre_processing(dict_images):
 
     MR = dict_images['MR']
     # MR = np.clip(MR, a_min=-1024)
+    _, D, H, W = MR.shape
+    MR = crop(MR, start=int(W / 4), end=-int(W / 4), axis='W')
     MR = normalize(MR)  # normalization
     # Mask = dict_images['Mask']
 
