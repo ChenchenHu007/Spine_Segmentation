@@ -2,6 +2,7 @@ import torch
 import numpy as np
 import math
 import cv2
+import SimpleITK as sitk
 
 
 def normalize(img, eps=1e-4):
@@ -118,3 +119,80 @@ def remove_padding_z(img, target_z):
 
     return img
 
+
+def get_sitk_interpolator(interpolator):
+    """
+    Return an sitk interpolator object for the given string.
+    :param interpolator: Interpolator type as string.
+                         'nearest': sitk.sitkNearestNeighbor
+                         'linear': sitk.sitkLinear
+                         'cubic': sitk.sitkBSpline
+                         'label_gaussian': sitk.sitkLabelGaussian
+                         'gaussian': sitk.sitkGaussian
+                         'lanczos': sitk.sitkLanczosWindowedSinc
+    :return: The sitk interpolator object.
+    """
+    if interpolator == 'nearest':
+        return sitk.sitkNearestNeighbor
+    elif interpolator == 'linear':
+        return sitk.sitkLinear
+    elif interpolator == 'cubic':
+        return sitk.sitkBSpline
+    elif interpolator == 'label_gaussian':
+        return sitk.sitkLabelGaussian
+    elif interpolator == 'gaussian':
+        return sitk.sitkGaussian
+    elif interpolator == 'lanczos':
+        return sitk.sitkLanczosWindowedSinc
+    else:
+        raise Exception('invalid interpolator type')
+
+
+# modified from https://simpleitk.readthedocs.io/en/master/link_DicomConvert_docs.html?highlight=resample
+def resize_sitk_image(image, dsize=(256, 256, None), interpolator='nearest'):  # note that order in sitk is (x, y, z)
+    """
+    image:sitk.SimpleITK.Image
+    dsize: The order of dsize is similar with sitk
+    """
+    assert isinstance(image, sitk.SimpleITK.Image)
+    interpolator = get_sitk_interpolator(interpolator=interpolator)
+    old_size = np.array(image.GetSize())
+    old_spacing = np.array(image.GetSpacing())
+
+    if None in dsize:
+        dsize = list(dsize)
+        index = dsize.index(None)
+        dsize[index] = int(old_size[index])
+
+    scale_factor = np.array(dsize) / old_size
+
+    new_spacing = old_spacing / scale_factor
+
+    image = sitk.Resample(image1=image, size=dsize,
+                          transform=sitk.Transform(),
+                          interpolator=interpolator,
+                          outputOrigin=image.GetOrigin(),
+                          outputSpacing=new_spacing,
+                          outputDirection=image.GetDirection(),
+                          defaultPixelValue=0,
+                          outputPixelType=image.GetPixelID())
+
+    return image
+
+
+def resize_to_spacing(image, new_spacing, interpolator='nearest'):
+    old_spacing = image.GetSpacing()
+    old_size = image.GetSize()
+    new_size = [int(old_sp * old_si / new_sp) for old_sp, old_si, new_sp in zip(old_spacing, old_size, new_spacing)]
+
+    interpolator = get_sitk_interpolator(interpolator)
+    image = sitk.Resample(image1=image, size=new_size,
+                          transform=sitk.Transform(),
+                          interpolator=interpolator,
+                          outputOrigin=image.GetOrigin(),
+                          outputSpacing=new_spacing,
+                          outputDirection=image.GetDirection(),
+                          defaultPixelValue=0,
+                          outputPixelType=image.GetPixelID())
+
+    return image
