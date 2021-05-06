@@ -7,7 +7,7 @@ class Loss(nn.Module):
     def __init__(self):
         super().__init__()
 
-        self.dc_and_ce = DC_and_CE_loss(soft_dice_kwargs={'batch_dice': False,
+        self.dc_and_ce = DC_and_CE_loss(soft_dice_kwargs={'batch_dice': True,
                                                           'do_bg': True,
                                                           'smooth': 1.,
                                                           'square': False},
