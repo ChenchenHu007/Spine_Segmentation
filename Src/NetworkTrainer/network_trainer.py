@@ -230,14 +230,13 @@ class NetworkTrainer:
 
             # List_loader_output[0] default as the input
             input_ = case[0]  # tensor: (batch_size, C, D, H, W)
-            target = case[1:]  # tensor: (b, C, D, H, W)  # FIXME target_A, target_B
+            target = case[1:]  # tensor: (b, C, D, H, W)
 
             # Record time of preparing data
             self.time.train_loader_time_per_epoch += time.time() - time_start_load_data
 
             # Forward
             output = self.forward(input_, phase='train')  # tensor:（b, num_classes, D, H, W） [pred_A, pred_B]
-            # FIXME post_processing needed
             # Backward
             loss = self.backward(output, target)
 

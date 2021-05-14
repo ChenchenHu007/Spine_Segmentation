@@ -43,7 +43,7 @@ def crop(img, start, end, axis='x'):
     :param end: the index where cropping ends
     :param axis: which axis cropping along with
     """
-    assert axis.lower() in ['z', 'y', 'x', 'd', 'h', 'w'], str(axis) + 'is not in (D, H, W) or (z, y, x) !'
+    assert axis.lower() in ['z', 'y', 'x', 'd', 'h', 'w'], str(axis) + 'is not (D, H, W) or (z, y, x) !'
 
     if axis.lower() in ['z', 'd']:
         img = img[:, start:end, :, :]
