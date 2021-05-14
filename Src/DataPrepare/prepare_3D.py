@@ -21,7 +21,6 @@ if __name__ == '__main__':
     if not os.path.exists(Spine_Segmentation):
         os.mkdir(Spine_Segmentation)
 
-    # FIXME resize and crop
     for MR in MRs:
         case_id = MR.split('.nii.gz')[0]  # Case*
         case_path = os.path.join(MR_path, MR)  #
