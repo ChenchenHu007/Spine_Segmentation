@@ -116,7 +116,7 @@ def inference(trainer, list_case_dirs, save_path, do_TTA=False):
     with torch.no_grad():
         trainer.setting.network.eval()
         for case_dir in tqdm(list_case_dirs):
-            assert os.path.exists(case_dir), case_dir + 'do not exist!'
+            assert os.path.exists(case_dir), case_dir + 'does not exist!'
             case_id = case_dir.split('/')[-1]
 
             dict_images = read_data(case_dir)

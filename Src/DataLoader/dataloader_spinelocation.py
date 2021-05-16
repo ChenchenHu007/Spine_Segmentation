@@ -54,10 +54,11 @@ def pre_processing(dict_images):
     heatmap_generator = HeatmapGenerator(image_size=(D, H, W),
                                          sigma=2.,
                                          spine_heatmap_sigma=20,
-                                         scale_factor=1.,
+                                         scale_factor=3.,
+                                         spine_heatmap_scale_factor=10.,
                                          normalize=True,
-                                         size_sigma_factor=6,
-                                         sigma_scale_factor=1,
+                                         size_sigma_factor=8,
+                                         sigma_scale_factor=2,
                                          dtype=np.float32)
     spine_heatmap = heatmap_generator.generate_spine_heatmap(list_landmarks=dict_images['list_landmarks'])
 

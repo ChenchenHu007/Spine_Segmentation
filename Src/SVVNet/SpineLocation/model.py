@@ -151,13 +151,13 @@ class Model(nn.Module):
         super(Model, self).__init__()
 
         # list_ch records the number of channels in each stage, eg. [-1, 32, 64, 128, 256, 512]
-        self.net_A = BaseUNet(in_ch, list_ch)
+        self.net = BaseUNet(in_ch, list_ch)
 
-        self.conv_out_A = nn.Conv3d(list_ch[1], out_ch, kernel_size=1, padding=0, bias=True)
+        self.conv_out = nn.Conv3d(list_ch[1], out_ch, kernel_size=1, padding=0, bias=True)
 
     def forward(self, x):
-        out_net_A = self.net_A(x)
+        out_net = self.net(x)
 
-        output_A = self.conv_out_A(out_net_A)
+        output = self.conv_out(out_net)
 
-        return output_A
+        return output

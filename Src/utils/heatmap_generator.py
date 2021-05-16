@@ -13,6 +13,7 @@ class HeatmapGenerator:
         :param image_size: Output image size
         :param sigma: Sigma of Gaussian
         :param scale_factor: the value of the landmark is multiplied with this value
+        :param spine_heatmap_scale_factor: the values of spine heatmap will be multiplied by this value
         :param normalize: if true, the value on the center is set to scale_factor
                      otherwise, the default gaussian normalization factor is used
         :param size_sigma_factor: the region size for which values are being calculated
@@ -20,22 +21,24 @@ class HeatmapGenerator:
                                   appropriate value of sigma_scale_factor in generate_heatmap method
                                   the number of nonzero values = (sigma * size_sigma_factor + 1) ^ 2 * 5
 
-        :param sigma_scale_factor: the values of the gaussian heatmap are multiplied by this value.
+        :param sigma_scale_factor: sigma will are multiplied by this value.
 
         """
     def __init__(self,
                  image_size=(12, 256, 256),  # (12, 512, 512)
                  sigma=2.,
-                 spine_heatmap_sigma=10,  # 20
-                 scale_factor=1.,
+                 spine_heatmap_sigma=20,  # 20
+                 scale_factor=3.,
+                 spine_heatmap_scale_factor=10,
                  normalize=True,
-                 size_sigma_factor=3,  # 6
-                 sigma_scale_factor=1,
+                 size_sigma_factor=4,  # 8
+                 sigma_scale_factor=2,
                  dtype=np.float32):
         self.image_size = image_size
         self.sigma = sigma
         self.spine_heatmap_sigma = spine_heatmap_sigma
         self.scale_factor = scale_factor
+        self.spine_heatmap_scale_factor = spine_heatmap_scale_factor
         self.dim = len(image_size)
         self.normalize = normalize
         self.size_sigma_factor = size_sigma_factor
@@ -78,7 +81,7 @@ class HeatmapGenerator:
             scale /= math.pow(math.sqrt(2 * math.pi) * sigma, self.dim)
 
         if self.dim == 1:
-            dx = np.meshgrid(range(region_size[0]))
+            dx = np.meshgrid(range(region_size[0]), indexing='ij')
             x_diff = dx + region_start[0] - landmark[0]
 
             squared_distances = x_diff * x_diff
@@ -88,7 +91,7 @@ class HeatmapGenerator:
             heatmap[region_start[0]:region_end[0]] = cropped_heatmap[:]
 
         if self.dim == 2:
-            dy, dx = np.meshgrid(range(region_size[1]), range(region_size[0]))
+            dy, dx = np.meshgrid(range(region_size[0]), range(region_size[1]), indexing='ij')
             y_diff = dx + region_start[0] - landmark[0]
             x_diff = dy + region_start[1] - landmark[1]
 
@@ -131,6 +134,7 @@ class HeatmapGenerator:
         """Generates a 4d numpy array image of spine heatmap"""
         landmark_heatmaps = self.generate_heatmaps(list_landmarks)
         landmark_heatmaps = np.sum(landmark_heatmaps, axis=0)
-        spine_heatmap = ndimage.gaussian_filter(landmark_heatmaps, sigma=self.spine_heatmap_sigma)
+        spine_heatmap = ndimage.gaussian_filter(landmark_heatmaps,
+                                                sigma=self.spine_heatmap_sigma) * self.spine_heatmap_scale_factor
         return spine_heatmap[np.newaxis, :, :, :]
 
