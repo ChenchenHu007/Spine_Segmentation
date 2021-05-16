@@ -33,6 +33,21 @@ def resize_3Dimage(img, dsize, mode='nearest'):
 
     return img_
 
+# Crop_center
+def crop_center(img, center, desize):
+    """
+    corp an image with given center and wanted size for the feature structure
+    :param img: 2D image whose shape must be H*W or Y*X,
+    :param center: the center axis of the cropped image
+    :param desize: target size of image (x,y)
+    """
+    x_size = desize[0]
+    y_size = desize[1]
+    startx = center[1] - x_size // 2
+    starty = center[2] - y_size // 2
+
+    return img[:, :, int(startx):int(startx + x_size), int(starty): int(starty + y_size)]
+
 
 # Crop
 def crop(img, start, end, axis='x'):
