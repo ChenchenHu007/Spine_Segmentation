@@ -123,10 +123,11 @@ def inference(trainer, list_case_dirs, save_path, do_TTA=False):
             list_images = pre_processing(dict_images)  # [MR]
             list_images = val_transform(list_images)
 
-            C, D, H, W = list_images[0].shape
+            input_ = list_images[0]
+            C, D, H, W = input_.shape
             target = list_images[1].unsqueeze(0).to(trainer.setting.device)
             if D > 12:
-                input_ = torch.stack((list_images[0][:, :12, :, :], list_images[0][:, -12:, :, :]), dim=0) \
+                input_ = torch.stack((input_[:, :12, :, :], input_[:, -12:, :, :]), dim=0) \
                     .to(trainer.setting.device)
                 pred_spine_heatmap = trainer.setting.network(input_)
                 pred_spine_heatmap = post_processing(pred_spine_heatmap, target, device=trainer.setting.device)
@@ -147,7 +148,7 @@ def inference(trainer, list_case_dirs, save_path, do_TTA=False):
             # prediction = one_hot_to_img(prediction)
 
             dict_loss[case_id] = loss_function(pred_spine_heatmap, [target]).cpu()
-            pred_spine_heatmap = pred_spine_heatmap.cpu()
+            pred_spine_heatmap = pred_spine_heatmap.cpu().numpy()
 
             # Save prediction to nii image
             templete_nii = sitk.ReadImage(case_dir + '/MR_512.nii.gz')
@@ -156,7 +157,7 @@ def inference(trainer, list_case_dirs, save_path, do_TTA=False):
             prediction_nii = copy_sitk_imageinfo(templete_nii, prediction_nii)
             if not os.path.exists(save_path + '/' + case_id):
                 os.mkdir(save_path + '/' + case_id)
-            sitk.WriteImage(prediction_nii, save_path + '/' + case_id + '/pred_mask.nii.gz')
+            sitk.WriteImage(prediction_nii, save_path + '/' + case_id + '/pred_spine_heatmap.nii.gz')
     return dict_loss
 
 
@@ -180,7 +181,7 @@ if __name__ == "__main__":
     trainer.setting.project_name = 'Spine_Location'
     trainer.setting.output_dir = '../../../Output/Spine_Location'
 
-    if args.model_type == 'C3D_base':
+    if args.model_type == 'Unet_base':
         trainer.setting.network = Model(in_ch=1, out_ch=1,
                                         list_ch=[-1, 16, 32, 64, 128, 256])
         print('Loading Unet_base !')
@@ -212,4 +213,4 @@ if __name__ == "__main__":
     for key, value in dict_loss.items():
         print(key + ': %12.12f' % value)
 
-    print('\n\nmean loss is: ' + str(np.mean(dict_loss.values())))
+    print('\n\nmean loss is: ' + str(np.mean(list(dict_loss.values()))))

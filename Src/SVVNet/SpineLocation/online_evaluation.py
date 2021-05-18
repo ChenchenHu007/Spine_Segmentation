@@ -28,4 +28,4 @@ def online_evaluation(trainer):
     except:
         pass
     # Evaluation score is the lower the better
-    return np.mean(list_val_loss)  # negative value
+    return np.mean(list_val_loss)
