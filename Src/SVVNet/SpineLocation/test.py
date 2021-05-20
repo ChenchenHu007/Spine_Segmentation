@@ -173,7 +173,7 @@ if __name__ == "__main__":
     parser.add_argument('--TTA', type=bool, default=True,
                         help='do test-time augmentation, default True')
 
-    parser.add_argument('--model_type', type=str, default='C3D_base')
+    parser.add_argument('--model_type', type=str, default='Unet_base')
     parser.add_argument('--catalogue', type=int, default=0)
     args = parser.parse_args()
 
