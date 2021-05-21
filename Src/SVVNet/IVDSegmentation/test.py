@@ -171,7 +171,7 @@ def inference(trainer, list_case_dirs, save_path, do_TTA=False):
                 input_ = np.concatenate((MR, heatmap), axis=0)  # (2, D, H, W)
 
                 if D > 12:
-                    input_, patch, pad = crop_to_center(input_[1], landmark=landmark, dsize=dsize)
+                    input_, patch, pad = crop_to_center(input_, landmark=landmark, dsize=dsize)
                     input_ = np.stack((input_[:, :12, :, :], input_[:, -12:, :, :]), axis=0)  # (2, 2, 12, H, W)
 
                     input_ = torch.from_numpy(input_).to(trainer.setting.device)
@@ -196,7 +196,7 @@ def inference(trainer, list_case_dirs, save_path, do_TTA=False):
                 if pad_w_2 > 0:
                     pred_IVDMask = pred_IVDMask[:, :, :, :-pad_w_2]
 
-                pred_IVDMask = torch.where(pred_IVDMask > 0, label + 1, 0)
+                pred_IVDMask = torch.where(pred_IVDMask > 0, label + 11, 0)
                 pred_Mask[:, :, bh:eh, bw:ew] = pred_IVDMask
 
             # FIXME TTA, only elastic_deformation. rotate_around_z_axis, translate are complex
