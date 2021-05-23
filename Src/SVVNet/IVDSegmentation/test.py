@@ -151,7 +151,7 @@ def inference(trainer, list_case_dirs, save_path, do_TTA=False):
             list_IVD_landmarks = list_images[1]
 
             C, D, H, W = MR.shape
-            dsize = (12, 128, 128)
+            dsize = (12, 64, 96)
             # all pred_IVDMask will be insert into this tensor
             pred_Mask = torch.zeros(C, D, H, W).to(trainer.setting.device)
             heatmap_generator = HeatmapGenerator(image_size=(D, H, W),

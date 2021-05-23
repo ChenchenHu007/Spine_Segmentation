@@ -9,7 +9,7 @@ from utils.processing import crop
 from utils.heatmap_generator import HeatmapGenerator
 
 from DataAugmentation.augmentation_IVDsegmentation import \
-    random_rotate_around_z_axis, random_translate, random_elastic_deformation, to_tensor
+    random_rotate_around_z_axis, random_translate, random_elastic_deformation, to_tensor, random_flip_3d
 
 
 def landmark_extractor(landmarks):
@@ -114,27 +114,30 @@ def pre_processing(dict_images):
         heatmap = crop(heatmap, start=start, end=start + 12, axis='z')
         Mask = crop(Mask, start=start, end=start + 12, axis='z')
 
-    MR = crop_to_center(MR, list_landmarks[index], dsize=(12, 128, 128))
-    heatmap = crop_to_center(heatmap, list_landmarks[index], dsize=(12, 128, 128))
-    Mask = crop_to_center(Mask, list_landmarks[index], dsize=(12, 128, 128))
+    MR = crop_to_center(MR, list_landmarks[index], dsize=(12, 64, 96))
+    heatmap = crop_to_center(heatmap, list_landmarks[index], dsize=(12, 64, 96))
+    Mask = crop_to_center(Mask, list_landmarks[index], dsize=(12, 64, 96))
 
     return [np.concatenate((MR, heatmap)), Mask]
 
 
 def train_transform(list_images):
 
-    list_images[:-1] = random_elastic_deformation(list_images[:-1], p=0.5)
+    list_images[:-1] = random_elastic_deformation(list_images[:-1], p=0.3)
+
+    # Random flip along z and x axis
+    list_images = random_flip_3d(list_images, list_axis=(0, 2), p=0.8)
 
     # Random rotation
     list_images = random_rotate_around_z_axis(list_images,
-                                              list_angles=(0, 5, 10, 15, -5, -10, -15),
+                                              list_angles=(0, 3, 6, 9, 10, -3, -6, -9),
                                               list_border_value=(0, 0, 0),
                                               list_interp=(cv2.INTER_NEAREST, cv2.INTER_NEAREST, cv2.INTER_NEAREST),
                                               p=0.3)
 
     list_images = random_translate(list_images,  # [MR, spine_heatmap]
                                    p=0.8,
-                                   max_shift=10)
+                                   max_shift=3)
 
     # To torch tensor
     list_images = to_tensor(list_images)
