@@ -9,8 +9,13 @@ import torch
 from scipy import ndimage
 
 
-def random_scale(list_images,):
-    pass
+def random_contrast(list_images, p=0.3):
+    if random.random() <= p:
+        for img_i in range(len(list_images)):
+            contrast_factor = random.uniform(0.75, 1.25)
+            list_images[img_i] = np.clip(list_images[img_i] * contrast_factor, a_min=0, a_max=1)
+
+    return list_images
 
 
 # Random flip

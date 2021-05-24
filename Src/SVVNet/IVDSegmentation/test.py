@@ -121,38 +121,44 @@ def copy_sitk_imageinfo(image1, image2):
     return image2
 
 
-# Input is C*Z*H*W
+# Input is B*C*Z*H*W
 def flip_3d(input_, list_axes):
-    if 'Z' in list_axes:
-        input_ = input_[:, ::-1, :, :]
-    if 'W' in list_axes:
-        input_ = input_[:, :, :, ::-1]
+
+    input_ = torch.flip(input_, list_axes)
 
     return input_
 
 
 def test_time_augmentation(trainer, input_, TTA_mode):
-    list_prediction_B = []
+    """
+    :param input_: 5D tensor (B, C, D, H, W)
+    """
+    list_pred = []
 
     for list_flip_axes in TTA_mode:
         # Do Augmentation before forward
-        augmented_input = flip_3d(input_.copy(), list_flip_axes)
-        augmented_input = torch.from_numpy(augmented_input.astype(np.float32))
-        augmented_input = augmented_input.unsqueeze(0).to(trainer.setting.device)
-        [_, prediction_B] = trainer.setting.network(augmented_input)
+        augmented_input = flip_3d(input_, list_flip_axes)
+        pred = trainer.setting.network(augmented_input)  # (B, num_classes, D, H, W) probability distribution
 
         # Aug back to original order
-        prediction_B = flip_3d(np.array(prediction_B.cpu().data[0, :, :, :, :]), list_flip_axes)
-        # numpy: (num_classes, D, H, W)
+        pred = flip_3d(pred, list_flip_axes)  # probability distribution
+        # print(pred.cpu().numpy().shape)
 
-        list_prediction_B.append(prediction_B)
+        list_pred.append(pred)  # probability distribution
 
-    return np.mean(list_prediction_B, axis=0)
+    list_pred = torch.stack(list_pred)
+
+    return torch.mean(list_pred, dim=0)
 
 
 def inference(trainer, list_case_dirs, save_path, do_TTA=False):
     if not os.path.exists(save_path):
         os.mkdir(save_path)
+
+    if do_TTA:
+      TTA_mode = [[], [2], [4], [2, 4]]
+    else:
+      TTA_mode = [[]]
 
     with torch.no_grad():
         trainer.setting.network.eval()
@@ -192,14 +198,16 @@ def inference(trainer, list_case_dirs, save_path, do_TTA=False):
                     input_ = np.stack((input_[:, :12, :, :], input_[:, -12:, :, :]), axis=0)  # (2, 2, 12, H, W)
 
                     input_ = torch.from_numpy(input_).to(trainer.setting.device)
-                    pred_IVDMask = trainer.setting.network(input_)  # (2, 2, 12, 128, 128)
+                    # pred_IVDMask = trainer.setting.network(input_)  # (2, 2, 12, 128, 128)
+                    pred_IVDMask = test_time_augmentation(trainer, input_, TTA_mode)
                     pred_IVDMask = post_processing(pred_IVDMask, D, device=trainer.setting.device)  # (1, 2, D, 128, 128)
                     pred_IVDMask = torch.argmax(pred_IVDMask, dim=1)  # (1, D, 128, 128)
 
                 else:
                     input_, patch, pad = crop_to_center(input_, landmark=landmark, dsize=dsize)
                     input_ = torch.from_numpy(input_).unsqueeze(0).to(trainer.setting.device)
-                    pred_IVDMask = trainer.setting.network(input_)  # (1, 2, 12, 128, 128)
+                    # pred_IVDMask = trainer.setting.network(input_)  # (1, 2, 12, 128, 128)
+                    pred_IVDMask = test_time_augmentation(trainer, input_, TTA_mode)
                     pred_IVDMask = torch.argmax(pred_IVDMask, dim=1)  # (1, 12, 128, 128)
 
                 bh, eh, bw, ew = patch
@@ -217,17 +225,7 @@ def inference(trainer, list_case_dirs, save_path, do_TTA=False):
                 temp[:, :, bh:eh, bw:ew] = pred_IVDMask
                 pred_Mask += temp
 
-            # FIXME TTA, only elastic_deformation. rotate_around_z_axis, translate are complex
-            # Test-time augmentation
-            # if do_TTA:
-            #     TTA_mode = [[], ['Z'], ['W'], ['Z', 'W']]
-            # else:
-            #     TTA_mode = [[]]
-            # prediction = test_time_augmentation(trainer, input_, TTA_mode)
-            # prediction = one_hot_to_img(prediction)
-
-            # dict_loss[case_id] = loss_function(pred_Mask, [target]).cpu()
-            pred_Mask = pred_Mask.cpu().numpy()
+            pred_Mask = pred_Mask.cpu().numpy()  # (1, 12, 128, 128)
 
             # Save prediction to nii image
             template_nii = sitk.ReadImage(case_dir + '/MR_512.nii.gz')
@@ -249,7 +247,7 @@ if __name__ == "__main__":
                         help='GPU id used for testing (default: 0)')
     parser.add_argument('--model_path', type=str,
                         default='../../../Output/IVD_Segmentation/best_val_evaluation_index.pkl')
-    parser.add_argument('--TTA', type=bool, default=True,
+    parser.add_argument('--TTA', type=int, default=1,
                         help='do test-time augmentation, default True')
 
     parser.add_argument('--model_type', type=str, default='Unet_base')
@@ -287,11 +285,6 @@ if __name__ == "__main__":
     inference(trainer, list_case_dirs, save_path=os.path.join(trainer.setting.output_dir, 'Prediction'),
               do_TTA=args.TTA)
 
-    """
-    Owing to the incomplete prediction, evaluation only for IVD is useless
-    Official evaluation function, cal_subject_level_dice needed 
-    after assembling the IVD, Vertebrae and Coccyx Segmentation
-    """
     # print('\n\n# IVD prediction completed !')
     print('\n\n# Start evaluation !')
     Dice_score = evaluate_IVDs(prediction_dir=os.path.join(trainer.setting.output_dir, 'Prediction'),
