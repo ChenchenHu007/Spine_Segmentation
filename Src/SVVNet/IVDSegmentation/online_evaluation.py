@@ -2,11 +2,30 @@
 import numpy as np
 import torch
 from tqdm import tqdm
+from Loss.SegLoss.DiceLoss import SoftDiceLoss
+
+
+class Loss(torch.nn.Module):
+    def __init__(self):
+        super().__init__()
+
+        self.loss = SoftDiceLoss()
+
+    def forward(self, prediction, gt):
+        pred_A = prediction  # tensor: (b, num_classes, D, H, W)
+        gt_mask = gt[0]
+        # gt_A = gt[0]  # tensor: (b, C, D, H, W)
+        # gt_B = gt[1]
+
+        loss = self.loss(pred_A, gt_mask)  # negative value
+
+        return loss
 
 
 def online_evaluation(trainer):
 
     list_val_loss = []
+    val_loss_function = Loss()
 
     with torch.no_grad():
         trainer.setting.network.eval()
@@ -18,12 +37,11 @@ def online_evaluation(trainer):
                 target[target_i] = target[target_i].to(trainer.setting.device)
 
             pred_Mask = trainer.setting.network(input_)
-            val_loss = trainer.setting.loss_function(pred_Mask, target)
-            val_loss = val_loss.cpu().numpy()
+            val_loss = val_loss_function(pred_Mask, target).cpu().numpy()
             list_val_loss.append(val_loss)
 
     try:
-        trainer.print_log_to_file('===============================================> mean val loss %12.12f'
+        trainer.print_log_to_file('===============================================> mean val DSC: %12.12f'
                                   % (np.mean(list_val_loss)), 'a')
     except:
         pass

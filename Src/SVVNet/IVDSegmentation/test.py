@@ -21,7 +21,25 @@ from utils.heatmap_generator import HeatmapGenerator
 from utils.tools import csv_to_catalogue
 from utils.processing import crop
 from post_processing import post_processing
-from loss import Loss
+
+
+def evaluate_IVDs(prediction_dir, gt_dir):
+    """
+    This is a demo for calculating the mean dice of all subjects.
+    modified from https://www.spinesegmentation-challenge.com/?page_id=34
+    """
+    dscs = []
+    list_case_ids = os.listdir(prediction_dir)
+    for case_id in tqdm(list_case_ids):
+        pred_mask = sitk.ReadImage(os.path.join(prediction_dir, case_id, 'pred_IVDMask.nii.gz'))
+        pred = sitk.GetArrayFromImage(pred_mask)
+
+        gt_mask = sitk.ReadImage(os.path.join(gt_dir, case_id, 'IVDs_512.nii.gz'))
+        gt = sitk.GetArrayFromImage(gt_mask)
+
+        dsc = cal_subject_level_dice(pred, gt, num_classes=20)
+        dscs.append(dsc)
+    return np.mean(dscs)
 
 
 def crop_to_center(img, landmark=(0, 0, 0), dsize=(12, 128, 128)):
@@ -136,8 +154,6 @@ def inference(trainer, list_case_dirs, save_path, do_TTA=False):
     if not os.path.exists(save_path):
         os.mkdir(save_path)
 
-    dict_loss = dict()
-    loss_function = Loss()
     with torch.no_grad():
         trainer.setting.network.eval()
         for case_dir in tqdm(list_case_dirs):
@@ -162,10 +178,11 @@ def inference(trainer, list_case_dirs, save_path, do_TTA=False):
                                                  sigma_scale_factor=2,
                                                  dtype=np.float32)
 
-            for label, landmark in enumerate(list_IVD_landmarks):
+            for index, landmark in enumerate(list_IVD_landmarks):
                 if True in np.isnan(landmark):
                     continue
 
+                temp = torch.zeros(C, D, H, W).to(trainer.setting.device)
                 heatmap = heatmap_generator.generate_heatmap(landmark)[np.newaxis, :, :, :]  # (1, D, H, W)
                 # heatmap = torch.from_numpy(heatmap)
                 input_ = np.concatenate((MR, heatmap), axis=0)  # (2, D, H, W)
@@ -196,8 +213,9 @@ def inference(trainer, list_case_dirs, save_path, do_TTA=False):
                 if pad_w_2 > 0:
                     pred_IVDMask = pred_IVDMask[:, :, :, :-pad_w_2]
 
-                pred_IVDMask = torch.where(pred_IVDMask > 0, label + 11, 0)
-                pred_Mask[:, :, bh:eh, bw:ew] = pred_IVDMask
+                pred_IVDMask = torch.where(pred_IVDMask > 0, index + 11, 0)
+                temp[:, :, bh:eh, bw:ew] = pred_IVDMask
+                pred_Mask += temp
 
             # FIXME TTA, only elastic_deformation. rotate_around_z_axis, translate are complex
             # Test-time augmentation
@@ -212,14 +230,13 @@ def inference(trainer, list_case_dirs, save_path, do_TTA=False):
             pred_Mask = pred_Mask.cpu().numpy()
 
             # Save prediction to nii image
-            templete_nii = sitk.ReadImage(case_dir + '/MR_512.nii.gz')
+            template_nii = sitk.ReadImage(case_dir + '/MR_512.nii.gz')
 
             prediction_nii = sitk.GetImageFromArray(pred_Mask[0])
-            prediction_nii = copy_sitk_imageinfo(templete_nii, prediction_nii)
+            prediction_nii = copy_sitk_imageinfo(template_nii, prediction_nii)
             if not os.path.exists(save_path + '/' + case_id):
                 os.mkdir(save_path + '/' + case_id)
             sitk.WriteImage(prediction_nii, save_path + '/' + case_id + '/pred_IVDMask.nii.gz')
-    return dict_loss
 
 
 if __name__ == "__main__":
@@ -267,17 +284,17 @@ if __name__ == "__main__":
     cases = catalogue['test'].dropna()
     list_case_dirs = [os.path.join(path, cases[i]) for i in range(len(cases))]
 
-    dict_loss = inference(trainer, list_case_dirs, save_path=os.path.join(trainer.setting.output_dir, 'Prediction'),
-                          do_TTA=args.TTA)
+    inference(trainer, list_case_dirs, save_path=os.path.join(trainer.setting.output_dir, 'Prediction'),
+              do_TTA=args.TTA)
 
     """
     Owing to the incomplete prediction, evaluation only for IVD is useless
     Official evaluation function, cal_subject_level_dice needed 
     after assembling the IVD, Vertebrae and Coccyx Segmentation
     """
-    print('\n\n# IVD prediction completed !')
-    # print('\n\n# Start evaluation !')
-    # for key, value in dict_loss.items():
-    #     print(key + ': %12.12f' % value)
-    #
-    # print('\n\nmean loss is: ' + str(np.mean(list(dict_loss.values()))))
+    # print('\n\n# IVD prediction completed !')
+    print('\n\n# Start evaluation !')
+    Dice_score = evaluate_IVDs(prediction_dir=os.path.join(trainer.setting.output_dir, 'Prediction'),
+                               gt_dir=path)
+
+    print('\n\nDice score is: ' + str(Dice_score))
