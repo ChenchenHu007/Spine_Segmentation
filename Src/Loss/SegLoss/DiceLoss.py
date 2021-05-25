@@ -129,7 +129,7 @@ class GDiceLoss(nn.Module):
         intersection: torch.Tensor = w * einsum("bcxyz, bcxyz->bc", net_output, y_one_hot)
         union: torch.Tensor = w * (einsum("bcxyz->bc", net_output) + einsum("bcxyz->bc", y_one_hot))
         divided: torch.Tensor = - 2 * (einsum("bc->b", intersection) + self.smooth) / (
-                    einsum("bc->b", union) + self.smooth)
+                einsum("bc->b", union) + self.smooth)
         gdc = divided.mean()
 
         return gdc
@@ -476,7 +476,7 @@ class DC_and_topk_loss(nn.Module):
         super(DC_and_topk_loss, self).__init__()
         self.aggregate = aggregate
         self.ce = TopKLoss(**ce_kwargs)
-        self.dc = SoftDiceLoss(apply_nonlinear=softmax_helper, **soft_dice_kwargs)
+        self.dc = SoftDiceLoss(apply_nonlinear=nn.Softmax(dim=1), **soft_dice_kwargs)
 
     def forward(self, net_output, target):
         dc_loss = self.dc(net_output, target)
@@ -497,7 +497,7 @@ class ExpLog_loss(nn.Module):
     def __init__(self, soft_dice_kwargs, wce_kwargs, gamma=0.3):
         super(ExpLog_loss, self).__init__()
         self.wce = WeightedCrossEntropyLoss(**wce_kwargs)
-        self.dc = SoftDiceLoss(apply_nonlinear=softmax_helper, **soft_dice_kwargs)
+        self.dc = SoftDiceLoss(apply_nonlinear=nn.Softmax(dim=1), **soft_dice_kwargs)
         self.gamma = gamma
 
     def forward(self, net_output, target):
@@ -509,7 +509,6 @@ class ExpLog_loss(nn.Module):
         #     b = torch.pow(-torch.log(torch.clamp(ce_loss, 1e-6)), self.gamma)
         #     print('ExpLog dc loss:', a.cpu().numpy(), 'ExpLogce loss:', b.cpu().numpy())
         #     print('*'*20)
-        explog_loss = 0.8 * torch.pow(-torch.log(torch.clamp(dc_loss, 1e-6)), self.gamma) + \
-                      0.2 * wce_loss
+        explog_loss = 0.8 * torch.pow(-torch.log(torch.clamp(dc_loss, 1e-6)), self.gamma) + 0.2 * wce_loss
 
         return explog_loss
