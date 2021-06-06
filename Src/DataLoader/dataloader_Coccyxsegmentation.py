@@ -8,8 +8,8 @@ import pandas as pd
 from utils.processing import crop
 from utils.heatmap_generator import HeatmapGenerator
 
-from DataAugmentation.augmentation_IVDsegmentation import \
-    random_rotate_around_z_axis, random_translate, random_elastic_deformation, to_tensor, random_flip_3d
+from DataAugmentation.augmentation_Coccyxsegmentation import \
+    random_rotate_around_z_axis, random_translate, random_elastic_deformation, to_tensor, random_contrast, random_shift,random_flip_3d
 
 
 def landmark_extractor(landmarks):
@@ -101,9 +101,9 @@ def pre_processing(dict_images):
                                          dtype=np.float32)
     list_landmarks = dict_images['list_landmarks']
 
-    index = random.randint(10, 18)
-    while True in np.isnan(list_landmarks[index]):
-        index = random.randint(10, 18)
+    index = 0
+    # while True in np.isnan(list_landmarks[index]):
+    # index = random.randint(10, 18)
 
     heatmap = heatmap_generator.generate_heatmap(landmark=list_landmarks[index])[np.newaxis, :, :, :]
     Mask = np.where(Mask == index + 1, 1, 0)  # just segment one IVD
@@ -114,26 +114,26 @@ def pre_processing(dict_images):
         heatmap = crop(heatmap, start=start, end=start + 12, axis='z')
         Mask = crop(Mask, start=start, end=start + 12, axis='z')
 
-    MR = crop_to_center(MR, list_landmarks[index], dsize=(12, 64, 96))
-    heatmap = crop_to_center(heatmap, list_landmarks[index], dsize=(12, 64, 96))
-    Mask = crop_to_center(Mask, list_landmarks[index], dsize=(12, 64, 96))
+    MR = crop_to_center(MR, list_landmarks[index], dsize=(12, 224, 160))
+    heatmap = crop_to_center(heatmap, list_landmarks[index], dsize=(12, 224, 160))
+    Mask = crop_to_center(Mask, list_landmarks[index], dsize=(12, 224, 160))
 
     return [np.concatenate((MR, heatmap)), Mask]
 
 
 def train_transform(list_images):
-
     list_images[:-1] = random_elastic_deformation(list_images[:-1], p=0.3)
 
-    # Random flip along z and x axis
     list_images = random_flip_3d(list_images, list_axis=(0, 2), p=0.5)
-
+    #list_images = random_contrast(list_images, p=0.3)
     # Random rotation
     list_images = random_rotate_around_z_axis(list_images,
-                                              list_angles=(0, 3, 6, 9, 10, -3, -6, -9),
+                                              list_angles=(0, 1, 2, 3, -1, -2, -3),
                                               list_border_value=(0, 0, 0),
                                               list_interp=(cv2.INTER_NEAREST, cv2.INTER_NEAREST, cv2.INTER_NEAREST),
                                               p=0.3)
+
+    #list_images = random_shift(list_images, p=0.25)
 
     list_images = random_translate(list_images,  # [MR, spine_heatmap]
                                    p=0.8,
@@ -149,7 +149,7 @@ def val_transform(list_images):
     return list_images
 
 
-class IVDSegmentationDataset(data.Dataset):
+class CoccyxSegmentationDataset(data.Dataset):
     def __init__(self, catalogue, num_samples_per_epoch, phase, path):
 
         self.num_samples_per_epoch = num_samples_per_epoch
@@ -183,9 +183,9 @@ def get_loader(catalogue, batch_size=2,
                num_samples_per_epoch=1, num_works=4,
                phase='train',
                path='../../../Data/Spine_Segmentation'):
-    dataset = IVDSegmentationDataset(catalogue=catalogue,
-                                     num_samples_per_epoch=num_samples_per_epoch,
-                                     phase=phase, path=path)
+    dataset = CoccyxSegmentationDataset(catalogue=catalogue,
+                                        num_samples_per_epoch=num_samples_per_epoch,
+                                        phase=phase, path=path)
 
     loader = data.DataLoader(dataset=dataset, batch_size=batch_size, shuffle=True, num_workers=num_works,
                              pin_memory=True)

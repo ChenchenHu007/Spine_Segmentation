@@ -1,4 +1,3 @@
-# -*- encoding: utf-8 -*-
 import os
 import sys
 import argparse
@@ -6,6 +5,7 @@ import argparse
 import numpy as np
 import pandas as pd
 import torch
+import torch.nn as nn
 
 if os.path.abspath('..') not in sys.path:
     sys.path.insert(0, os.path.abspath('..'))
@@ -16,14 +16,36 @@ if os.path.abspath('../..') not in sys.path:
 from Evaluate.evaluate import *
 from model import *
 from NetworkTrainer.network_trainer import *
-from DataLoader.dataloader_IVDsegmentation import landmark_extractor
+from DataLoader.dataloader_Vertebraesegmentation import landmark_extractor
 from utils.heatmap_generator import HeatmapGenerator
 from utils.tools import csv_to_catalogue
 from utils.processing import crop
 from post_processing import post_processing
 
 
-def evaluate_IVDs(prediction_dir, gt_dir):
+def evaluate_Vertebrae_part(pre, gt):
+    dsc = cal_subject_level_dice(pre, gt, num_classes=20)
+
+    return dsc
+
+
+def recover_size(img, size=(12, 512, 512), patch=[]):
+    _, H, W = size
+    bh, eh, bw, ew = patch
+    pad_bh = bh
+    pad_eh = H - eh
+
+    pad_bw = bw
+    pad_ew = W - ew
+
+    img = np.pad(img,
+                 ((0, 0), (0, 0), (pad_bh, pad_eh), (pad_bw, pad_ew)),
+                 mode='constant',
+                 constant_values=0)
+    return img
+
+
+def evaluate_Vertebrae(prediction_dir, gt_dir):
     """
     This is a demo for calculating the mean dice of all subjects.
     modified from https://www.spinesegmentation-challenge.com/?page_id=34
@@ -31,10 +53,10 @@ def evaluate_IVDs(prediction_dir, gt_dir):
     dscs = []
     list_case_ids = os.listdir(prediction_dir)
     for case_id in tqdm(list_case_ids):
-        pred_mask = sitk.ReadImage(os.path.join(prediction_dir, case_id, 'pred_IVDMask.nii.gz'))
+        pred_mask = sitk.ReadImage(os.path.join(prediction_dir, case_id, 'pred_VertebraeMask.nii.gz'))
         pred = sitk.GetArrayFromImage(pred_mask)
 
-        gt_mask = sitk.ReadImage(os.path.join(gt_dir, case_id, 'IVDs_512.nii.gz'))
+        gt_mask = sitk.ReadImage(os.path.join(gt_dir, case_id, 'Vertebrae_512.nii.gz'))
         gt = sitk.GetArrayFromImage(gt_mask)
 
         dsc = cal_subject_level_dice(pred, gt, num_classes=20)
@@ -84,7 +106,7 @@ def read_data(case_dir):
     read data from a given path
     """
     dict_images = dict()
-    list_files = ['MR_512.nii.gz', 'landmarks_512.csv', ]
+    list_files = ['MR_512.nii.gz', 'landmarks_512.csv', 'Mask_512.nii.gz']
     # In fact, there is no Mask during inference, so we cannot load it.
 
     for file_name in list_files:
@@ -108,9 +130,9 @@ def pre_processing(dict_images):
     MR = dict_images['MR']
     MR = np.clip(MR / 2048, a_min=0, a_max=1)
 
-    list_IVD_landmarks = dict_images['list_landmarks'][10:]
+    list_Vertebrae_landmarks = dict_images['list_landmarks'][1:10]
 
-    return [MR, list_IVD_landmarks]
+    return [MR, list_Vertebrae_landmarks]
 
 
 def copy_sitk_imageinfo(image1, image2):
@@ -123,7 +145,6 @@ def copy_sitk_imageinfo(image1, image2):
 
 # Input is B*C*Z*H*W
 def flip_3d(input_, list_axes):
-
     input_ = torch.flip(input_, list_axes)
 
     return input_
@@ -156,9 +177,9 @@ def inference(trainer, list_case_dirs, save_path, do_TTA=False):
         os.mkdir(save_path)
 
     if do_TTA:
-      TTA_mode = [[], [2], [4], [2, 4]]
+        TTA_mode = [[], [2], [4], [2, 4]]
     else:
-      TTA_mode = [[]]
+        TTA_mode = [[]]
 
     with torch.no_grad():
         trainer.setting.network.eval()
@@ -167,14 +188,18 @@ def inference(trainer, list_case_dirs, save_path, do_TTA=False):
             case_id = case_dir.split('/')[-1]
 
             dict_images = read_data(case_dir)
+
+            gt = dict_images['Mask']
+            dcss = []
+
             list_images = pre_processing(dict_images)
             MR = list_images[0]
             # MR = torch.from_numpy(MR)
-            list_IVD_landmarks = list_images[1]
+            list_Vertebrae_landmarks = list_images[1]
 
             C, D, H, W = MR.shape
-            dsize = (12, 64, 96)
-            # all pred_IVDMask will be insert into this tensor
+            dsize = (12, 160, 224)
+            # all pred_VertebraeMask will be insert into this tensor
             pred_Mask = torch.zeros(C, D, H, W).to(trainer.setting.device)
             heatmap_generator = HeatmapGenerator(image_size=(D, H, W),
                                                  sigma=2.,
@@ -184,50 +209,64 @@ def inference(trainer, list_case_dirs, save_path, do_TTA=False):
                                                  sigma_scale_factor=2,
                                                  dtype=np.float32)
 
-            for index, landmark in enumerate(list_IVD_landmarks):
+            for index, landmark in enumerate(list_Vertebrae_landmarks):
                 if True in np.isnan(landmark):
                     continue
 
-                temp = torch.zeros(C, D, H, W).to(trainer.setting.device)
+                pre_gt = np.where(gt == index + 2, index + 2, 0)
+
                 heatmap = heatmap_generator.generate_heatmap(landmark)[np.newaxis, :, :, :]  # (1, D, H, W)
                 # heatmap = torch.from_numpy(heatmap)
                 input_ = np.concatenate((MR, heatmap), axis=0)  # (2, D, H, W)
 
                 if D > 12:
                     input_, patch, pad = crop_to_center(input_, landmark=landmark, dsize=dsize)
-                    input_ = np.stack((input_[:, :12, :, :], input_[:, -12:, :, :]), axis=0)  # (2, 2, 12, H, W)
 
+                    input_ = np.stack((input_[:, :12, :, :], input_[:, -12:, :, :]), axis=0)  # (2, 2, 12, H, W)
                     input_ = torch.from_numpy(input_).to(trainer.setting.device)
-                    # pred_IVDMask = trainer.setting.network(input_)  # (2, 2, 12, 128, 128)
-                    pred_IVDMask = test_time_augmentation(trainer, input_, TTA_mode)
-                    pred_IVDMask = post_processing(pred_IVDMask, D, device=trainer.setting.device)  # (1, 2, D, 128, 128)
-                    pred_IVDMask = nn.Softmax(dim=1)(pred_IVDMask)
-                    pred_IVDMask = torch.argmax(pred_IVDMask, dim=1)  # (1, D, 128, 128)
+                    # pred_VertebraeMask = trainer.setting.network(input_)  # (2, 2, 12, 128, 128)
+                    pred_VertebraeMask = test_time_augmentation(trainer, input_, TTA_mode)
+                    pred_VertebraeMask = post_processing(pred_VertebraeMask, D,
+                                                         device=trainer.setting.device)  # (1, 2, D, 128, 128)
+                    pred_VertebraeMask = nn.Softmax(dim=1)(pred_VertebraeMask)
+                    # pred_VertebraeMask = nn.Sigmoid()(pred_VertebraeMask)
+                    pred_VertebraeMask = torch.argmax(pred_VertebraeMask, dim=1)  # (1, D, 128, 128)
 
                 else:
                     input_, patch, pad = crop_to_center(input_, landmark=landmark, dsize=dsize)
                     input_ = torch.from_numpy(input_).unsqueeze(0).to(trainer.setting.device)
-                    # pred_IVDMask = trainer.setting.network(input_)  # (1, 2, 12, 128, 128)
-                    pred_IVDMask = test_time_augmentation(trainer, input_, TTA_mode)
-                    pred_IVDMask = nn.Softmax(dim=1)(pred_IVDMask)
-                    pred_IVDMask = torch.argmax(pred_IVDMask, dim=1)  # (1, 12, 128, 128)
+                    # pred_VertebraeMask = trainer.setting.network(input_)  # (1, 2, 12, 128, 128)
+                    pred_VertebraeMask = test_time_augmentation(trainer, input_, TTA_mode)
+                    pred_VertebraeMask = nn.Softmax(dim=1)(pred_VertebraeMask)
+                    # pred_VertebraeMask = nn.Sigmoid()(pred_VertebraeMask)
+                    pred_VertebraeMask = torch.argmax(pred_VertebraeMask, dim=1)  # (1, 12, 128, 128)
 
-
-                bh, eh, bw, ew = patch
                 pad_h_1, pad_h_2, pad_w_1, pad_w_2 = pad
                 if pad_h_1 > 0:
-                    pred_IVDMask = pred_IVDMask[:, :, pad_h_1:, :]
+                    pred_VertebraeMask = pred_VertebraeMask[:, :, pad_h_1:, :]
                 if pad_h_2 > 0:
-                    pred_IVDMask = pred_IVDMask[:, :, :-pad_h_2, :]
+                    pred_VertebraeMask = pred_VertebraeMask[:, :, :-pad_h_2, :]
                 if pad_w_1 > 0:
-                    pred_IVDMask = pred_IVDMask[:, :, :, pad_w_1:]
+                    pred_VertebraeMask = pred_VertebraeMask[:, :, :, pad_w_1:]
                 if pad_w_2 > 0:
-                    pred_IVDMask = pred_IVDMask[:, :, :, :-pad_w_2]
+                    pred_VertebraeMask = pred_VertebraeMask[:, :, :, :-pad_w_2]
 
-                pred_IVDMask = torch.where(pred_IVDMask > 0, index + 11, 0)
-                temp[:, :, bh:eh, bw:ew] = pred_IVDMask
-                pred_Mask += temp
+                pred_VertebraeMask = torch.where(pred_VertebraeMask > 0, index + 2, 0)
+                pred_VertebraeMask = pred_VertebraeMask.cpu().numpy()
 
+                pred_VertebraeMask = recover_size(pred_VertebraeMask, size=(12, 512, 512), patch=patch)
+
+                # score = evaluate_Vertebrae_part(pred_VertebraeMask, pre_gt)
+                # dcss.append(score)
+
+                pred_VertebraeMask = torch.from_numpy(pred_VertebraeMask).to(trainer.setting.device)
+                pred_Mask += pred_VertebraeMask
+
+                pred_Mask = pred_Mask.cpu().numpy()
+                pred_Mask = np.where(pred_Mask > index + 2, index + 1, pred_Mask)
+                pred_Mask = torch.from_numpy(pred_Mask).to(trainer.setting.device)
+
+            # print(np.mean(dcss))
             pred_Mask = pred_Mask.cpu().numpy()  # (1, 12, 128, 128)
 
             # Save prediction to nii image
@@ -237,7 +276,7 @@ def inference(trainer, list_case_dirs, save_path, do_TTA=False):
             prediction_nii = copy_sitk_imageinfo(template_nii, prediction_nii)
             if not os.path.exists(save_path + '/' + case_id):
                 os.mkdir(save_path + '/' + case_id)
-            sitk.WriteImage(prediction_nii, save_path + '/' + case_id + '/pred_IVDMask.nii.gz')
+            sitk.WriteImage(prediction_nii, save_path + '/' + case_id + '/pred_VertebraeMask.nii.gz')
 
 
 if __name__ == "__main__":
@@ -249,7 +288,7 @@ if __name__ == "__main__":
     parser.add_argument('--GPU_id', type=int, default=0,
                         help='GPU id used for testing (default: 0)')
     parser.add_argument('--model_path', type=str,
-                        default='../../../Output/IVD_Segmentation/best_val_evaluation_index.pkl')
+                        default='../../../Output/Vertebrae_Segmentation/best_val_evaluation_index.pkl')
     parser.add_argument('--TTA', type=int, default=1,
                         help='do test-time augmentation, default True')
 
@@ -258,8 +297,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     trainer = NetworkTrainer()
-    trainer.setting.project_name = 'IVD_Segmentation'
-    trainer.setting.output_dir = '../../../Output/IVD_Segmentation'
+    trainer.setting.project_name = 'Vertebrae_Segmentation'
+    trainer.setting.output_dir = '../../../Output/Vertebrae_Segmentation'
 
     if args.model_type == 'Unet_base':
         trainer.setting.network = Model(in_ch=2, out_ch=2,
@@ -288,9 +327,9 @@ if __name__ == "__main__":
     inference(trainer, list_case_dirs, save_path=os.path.join(trainer.setting.output_dir, 'Prediction'),
               do_TTA=args.TTA)
 
-    # print('\n\n# IVD prediction completed !')
+    # print('\n\n# Vertebrae prediction completed !')
     print('\n\n# Start evaluation !')
-    Dice_score = evaluate_IVDs(prediction_dir=os.path.join(trainer.setting.output_dir, 'Prediction'),
-                               gt_dir=path)
+    Dice_score = evaluate_Vertebrae(prediction_dir=os.path.join(trainer.setting.output_dir, 'Prediction'),
+                                    gt_dir=path)
 
     print('\n\nDice score is: ' + str(Dice_score))

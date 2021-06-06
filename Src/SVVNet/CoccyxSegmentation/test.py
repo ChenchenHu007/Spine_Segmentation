@@ -1,4 +1,3 @@
-# -*- encoding: utf-8 -*-
 import os
 import sys
 import argparse
@@ -16,14 +15,14 @@ if os.path.abspath('../..') not in sys.path:
 from Evaluate.evaluate import *
 from model import *
 from NetworkTrainer.network_trainer import *
-from DataLoader.dataloader_IVDsegmentation import landmark_extractor
+from DataLoader.dataloader_Coccyxsegmentation import landmark_extractor
 from utils.heatmap_generator import HeatmapGenerator
 from utils.tools import csv_to_catalogue
 from utils.processing import crop
 from post_processing import post_processing
 
 
-def evaluate_IVDs(prediction_dir, gt_dir):
+def evaluate_Coccyxs(prediction_dir, gt_dir):
     """
     This is a demo for calculating the mean dice of all subjects.
     modified from https://www.spinesegmentation-challenge.com/?page_id=34
@@ -31,10 +30,10 @@ def evaluate_IVDs(prediction_dir, gt_dir):
     dscs = []
     list_case_ids = os.listdir(prediction_dir)
     for case_id in tqdm(list_case_ids):
-        pred_mask = sitk.ReadImage(os.path.join(prediction_dir, case_id, 'pred_IVDMask.nii.gz'))
+        pred_mask = sitk.ReadImage(os.path.join(prediction_dir, case_id, 'pred_CoccyxMask.nii.gz'))
         pred = sitk.GetArrayFromImage(pred_mask)
 
-        gt_mask = sitk.ReadImage(os.path.join(gt_dir, case_id, 'IVDs_512.nii.gz'))
+        gt_mask = sitk.ReadImage(os.path.join(gt_dir, case_id, 'Coccyx_512.nii.gz'))
         gt = sitk.GetArrayFromImage(gt_mask)
 
         dsc = cal_subject_level_dice(pred, gt, num_classes=20)
@@ -108,9 +107,9 @@ def pre_processing(dict_images):
     MR = dict_images['MR']
     MR = np.clip(MR / 2048, a_min=0, a_max=1)
 
-    list_IVD_landmarks = dict_images['list_landmarks'][10:]
+    list_Coccyx_landmarks = dict_images['list_landmarks'][0:1]
 
-    return [MR, list_IVD_landmarks]
+    return [MR, list_Coccyx_landmarks]
 
 
 def copy_sitk_imageinfo(image1, image2):
@@ -170,11 +169,11 @@ def inference(trainer, list_case_dirs, save_path, do_TTA=False):
             list_images = pre_processing(dict_images)
             MR = list_images[0]
             # MR = torch.from_numpy(MR)
-            list_IVD_landmarks = list_images[1]
+            list_Coccyx_landmarks = list_images[1]
 
             C, D, H, W = MR.shape
-            dsize = (12, 64, 96)
-            # all pred_IVDMask will be insert into this tensor
+            dsize = (12, 224, 160)
+            # all pred_CoccyxMask will be insert into this tensor
             pred_Mask = torch.zeros(C, D, H, W).to(trainer.setting.device)
             heatmap_generator = HeatmapGenerator(image_size=(D, H, W),
                                                  sigma=2.,
@@ -184,7 +183,7 @@ def inference(trainer, list_case_dirs, save_path, do_TTA=False):
                                                  sigma_scale_factor=2,
                                                  dtype=np.float32)
 
-            for index, landmark in enumerate(list_IVD_landmarks):
+            for index, landmark in enumerate(list_Coccyx_landmarks):
                 if True in np.isnan(landmark):
                     continue
 
@@ -198,34 +197,33 @@ def inference(trainer, list_case_dirs, save_path, do_TTA=False):
                     input_ = np.stack((input_[:, :12, :, :], input_[:, -12:, :, :]), axis=0)  # (2, 2, 12, H, W)
 
                     input_ = torch.from_numpy(input_).to(trainer.setting.device)
-                    # pred_IVDMask = trainer.setting.network(input_)  # (2, 2, 12, 128, 128)
-                    pred_IVDMask = test_time_augmentation(trainer, input_, TTA_mode)
-                    pred_IVDMask = post_processing(pred_IVDMask, D, device=trainer.setting.device)  # (1, 2, D, 128, 128)
-                    pred_IVDMask = nn.Softmax(dim=1)(pred_IVDMask)
-                    pred_IVDMask = torch.argmax(pred_IVDMask, dim=1)  # (1, D, 128, 128)
+                    # pred_CoccyxMask = trainer.setting.network(input_)  # (2, 2, 12, 128, 128)
+                    pred_CoccyxMask = test_time_augmentation(trainer, input_, TTA_mode)
+                    pred_CoccyxMask = post_processing(pred_CoccyxMask, D, device=trainer.setting.device)  # (1, 2, D, 128, 128)
+                    pred_CoccyxMask = nn.Softmax(dim=1)(pred_CoccyxMask)
+                    pred_CoccyxMask = torch.argmax(pred_CoccyxMask, dim=1)  # (1, D, 128, 128)
 
                 else:
                     input_, patch, pad = crop_to_center(input_, landmark=landmark, dsize=dsize)
                     input_ = torch.from_numpy(input_).unsqueeze(0).to(trainer.setting.device)
-                    # pred_IVDMask = trainer.setting.network(input_)  # (1, 2, 12, 128, 128)
-                    pred_IVDMask = test_time_augmentation(trainer, input_, TTA_mode)
-                    pred_IVDMask = nn.Softmax(dim=1)(pred_IVDMask)
-                    pred_IVDMask = torch.argmax(pred_IVDMask, dim=1)  # (1, 12, 128, 128)
-
+                    # pred_CoccyxMask = trainer.setting.network(input_)  # (1, 2, 12, 128, 128)
+                    pred_CoccyxMask = test_time_augmentation(trainer, input_, TTA_mode)
+                    pred_CoccyxMask = nn.Softmax(dim=1)(pred_CoccyxMask)
+                    pred_CoccyxMask = torch.argmax(pred_CoccyxMask, dim=1)  # (1, 12, 128, 128)
 
                 bh, eh, bw, ew = patch
                 pad_h_1, pad_h_2, pad_w_1, pad_w_2 = pad
                 if pad_h_1 > 0:
-                    pred_IVDMask = pred_IVDMask[:, :, pad_h_1:, :]
+                    pred_CoccyxMask = pred_CoccyxMask[:, :, pad_h_1:, :]
                 if pad_h_2 > 0:
-                    pred_IVDMask = pred_IVDMask[:, :, :-pad_h_2, :]
+                    pred_CoccyxMask = pred_CoccyxMask[:, :, :-pad_h_2, :]
                 if pad_w_1 > 0:
-                    pred_IVDMask = pred_IVDMask[:, :, :, pad_w_1:]
+                    pred_CoccyxMask = pred_CoccyxMask[:, :, :, pad_w_1:]
                 if pad_w_2 > 0:
-                    pred_IVDMask = pred_IVDMask[:, :, :, :-pad_w_2]
+                    pred_CoccyxMask = pred_CoccyxMask[:, :, :, :-pad_w_2]
 
-                pred_IVDMask = torch.where(pred_IVDMask > 0, index + 11, 0)
-                temp[:, :, bh:eh, bw:ew] = pred_IVDMask
+                pred_CoccyxMask = torch.where(pred_CoccyxMask > 0, index + 1, 0)
+                temp[:, :, bh:eh, bw:ew] = pred_CoccyxMask
                 pred_Mask += temp
 
             pred_Mask = pred_Mask.cpu().numpy()  # (1, 12, 128, 128)
@@ -237,7 +235,7 @@ def inference(trainer, list_case_dirs, save_path, do_TTA=False):
             prediction_nii = copy_sitk_imageinfo(template_nii, prediction_nii)
             if not os.path.exists(save_path + '/' + case_id):
                 os.mkdir(save_path + '/' + case_id)
-            sitk.WriteImage(prediction_nii, save_path + '/' + case_id + '/pred_IVDMask.nii.gz')
+            sitk.WriteImage(prediction_nii, save_path + '/' + case_id + '/pred_CoccyxMask.nii.gz')
 
 
 if __name__ == "__main__":
@@ -249,7 +247,7 @@ if __name__ == "__main__":
     parser.add_argument('--GPU_id', type=int, default=0,
                         help='GPU id used for testing (default: 0)')
     parser.add_argument('--model_path', type=str,
-                        default='../../../Output/IVD_Segmentation/best_val_evaluation_index.pkl')
+                        default='../../../Output/Coccyx_Segmentation/best_val_evaluation_index.pkl')
     parser.add_argument('--TTA', type=int, default=1,
                         help='do test-time augmentation, default True')
 
@@ -258,8 +256,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     trainer = NetworkTrainer()
-    trainer.setting.project_name = 'IVD_Segmentation'
-    trainer.setting.output_dir = '../../../Output/IVD_Segmentation'
+    trainer.setting.project_name = 'Coccyx_Segmentation'
+    trainer.setting.output_dir = '../../../Output/Coccyx_Segmentation'
 
     if args.model_type == 'Unet_base':
         trainer.setting.network = Model(in_ch=2, out_ch=2,
@@ -288,9 +286,9 @@ if __name__ == "__main__":
     inference(trainer, list_case_dirs, save_path=os.path.join(trainer.setting.output_dir, 'Prediction'),
               do_TTA=args.TTA)
 
-    # print('\n\n# IVD prediction completed !')
+
     print('\n\n# Start evaluation !')
-    Dice_score = evaluate_IVDs(prediction_dir=os.path.join(trainer.setting.output_dir, 'Prediction'),
+    Dice_score = evaluate_Coccyxs(prediction_dir=os.path.join(trainer.setting.output_dir, 'Prediction'),
                                gt_dir=path)
 
     print('\n\nDice score is: ' + str(Dice_score))
