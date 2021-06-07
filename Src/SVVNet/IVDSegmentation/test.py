@@ -201,6 +201,7 @@ def inference(trainer, list_case_dirs, save_path, do_TTA=False):
                     # pred_IVDMask = trainer.setting.network(input_)  # (2, 2, 12, 128, 128)
                     pred_IVDMask = test_time_augmentation(trainer, input_, TTA_mode)
                     pred_IVDMask = post_processing(pred_IVDMask, D, device=trainer.setting.device)  # (1, 2, D, 128, 128)
+                    pred_IVDMask = nn.Softmax(dim=1)(pred_IVDMask)
                     pred_IVDMask = torch.argmax(pred_IVDMask, dim=1)  # (1, D, 128, 128)
 
                 else:
@@ -208,6 +209,7 @@ def inference(trainer, list_case_dirs, save_path, do_TTA=False):
                     input_ = torch.from_numpy(input_).unsqueeze(0).to(trainer.setting.device)
                     # pred_IVDMask = trainer.setting.network(input_)  # (1, 2, 12, 128, 128)
                     pred_IVDMask = test_time_augmentation(trainer, input_, TTA_mode)
+                    pred_IVDMask = nn.Softmax(dim=1)(pred_IVDMask)
                     pred_IVDMask = torch.argmax(pred_IVDMask, dim=1)  # (1, 12, 128, 128)
 
                 bh, eh, bw, ew = patch
