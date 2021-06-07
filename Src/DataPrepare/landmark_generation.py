@@ -19,7 +19,7 @@ def generate_centroids_from_array(image):
     for label_i in range(1, 20):
         if label_i in labels:
             tmp = np.where(image == label_i, label_i, 0)
-            landmark_i = ndimage.measurements.center_of_mass(tmp)
+            landmark_i = ndimage.center_of_mass(tmp)
             landmark_i = [round(x) for x in landmark_i]
             landmarks_[str(label_i)] = landmark_i
         else:
