@@ -92,4 +92,3 @@ if __name__ == "__main__":
     Dice_score = evaluate(prediction_dir=output_dir, gt_dir=path)
 
     print('\n\nDice score is: ' + str(Dice_score))
-

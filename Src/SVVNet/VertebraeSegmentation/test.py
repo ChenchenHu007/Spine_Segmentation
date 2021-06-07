@@ -204,6 +204,7 @@ def inference(trainer, list_case_dirs, save_path, do_TTA=False):
                 if True in np.isnan(landmark):
                     continue
 
+                temp = torch.zeros(C, D, H, W).to(trainer.setting.device)
                 heatmap = heatmap_generator.generate_heatmap(landmark)[np.newaxis, :, :, :]  # (1, D, H, W)
                 # heatmap = torch.from_numpy(heatmap)
                 input_ = np.concatenate((MR, heatmap), axis=0)  # (2, D, H, W)
@@ -228,6 +229,7 @@ def inference(trainer, list_case_dirs, save_path, do_TTA=False):
                     pred_VertebraeMask = nn.Softmax(dim=1)(pred_VertebraeMask)
                     pred_VertebraeMask = torch.argmax(pred_VertebraeMask, dim=1)  # (1, 12, 128, 128)
 
+                bh, eh, bw, ew = patch
                 pad_h_1, pad_h_2, pad_w_1, pad_w_2 = pad
                 if pad_h_1 > 0:
                     pred_VertebraeMask = pred_VertebraeMask[:, :, pad_h_1:, :]
@@ -239,14 +241,13 @@ def inference(trainer, list_case_dirs, save_path, do_TTA=False):
                     pred_VertebraeMask = pred_VertebraeMask[:, :, :, :-pad_w_2]
 
                 pred_VertebraeMask = torch.where(pred_VertebraeMask > 0, index + 2, 0)
-                pred_VertebraeMask = pred_VertebraeMask.cpu().numpy()
 
-                pred_VertebraeMask = recover_size(pred_VertebraeMask, size=(12, 512, 512), patch=patch)
+                temp[:, :, bh:eh, bw:ew] = pred_VertebraeMask
+                pred_Mask += temp
+                pred_Mask = pred_Mask.cpu().numpy()
 
-                pred_VertebraeMask = torch.from_numpy(pred_VertebraeMask).to(trainer.setting.device)
-                pred_Mask += pred_VertebraeMask
-
-                pred_Mask = torch.where(pred_Mask > index + 2, index + 1, pred_Mask)   # FIXME
+                pred_Mask = np.where(pred_Mask > index + 2, index + 1, pred_Mask)
+                pred_Mask = torch.from_numpy(pred_Mask).to(trainer.setting.device)
 
             pred_Mask = pred_Mask.cpu().numpy()  # (1, 12, 128, 128)
 
