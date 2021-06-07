@@ -126,7 +126,7 @@ def train_transform(list_images):
     list_images[:-1] = random_elastic_deformation(list_images[:-1], p=0.3)
 
     # Random flip along z and x axis
-    list_images = random_flip_3d(list_images, list_axis=(0, 2), p=0.8)
+    list_images = random_flip_3d(list_images, list_axis=(0, 2), p=0.5)
 
     # Random rotation
     list_images = random_rotate_around_z_axis(list_images,
