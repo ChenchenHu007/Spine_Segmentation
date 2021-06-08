@@ -3,7 +3,7 @@ import os
 import sys
 import argparse
 import pandas as pd
-
+from scipy import ndimage
 if os.path.abspath('..') not in sys.path:
     sys.path.insert(0, os.path.abspath('..'))
 
@@ -111,8 +111,6 @@ def inference(trainer, list_case_dirs, save_path, do_TTA=False):
     if not os.path.exists(save_path):
         os.mkdir(save_path)
 
-    dict_loss = dict()
-    loss_function = Loss()
     with torch.no_grad():
         trainer.setting.network.eval()
         for case_dir in tqdm(list_case_dirs):
@@ -127,18 +125,13 @@ def inference(trainer, list_case_dirs, save_path, do_TTA=False):
             C, D, H, W = input_.shape
             target = list_images[1].unsqueeze(0).to(trainer.setting.device)
             if D > 12:
-                input_ = torch.stack((input_[:, :12, :, :], input_[:, -12:, :, :]), dim=0) \
-                    .to(trainer.setting.device)
-                pred_spine_heatmap = trainer.setting.network(input_)
-                pred_spine_heatmap = post_processing(pred_spine_heatmap, target, device=trainer.setting.device)
-
+                input_ = torch.stack((input_[:, :12, :, :], input_[:, -12:, :, :]), dim=0).to(trainer.setting.device)
+                pred_heatmap = trainer.setting.network(input_)
+                pred_heatmap = post_processing(pred_heatmap, target, device=trainer.setting.device)
             else:
                 input_ = list_images[0].unsqueeze(0).to(trainer.setting.device)
-                pred_spine_heatmap = trainer.setting.network(input_)
+                pred_heatmap = trainer.setting.network(input_)
 
-
-
-            # FIXME TTA
             # Test-time augmentation
             # if do_TTA:
             #     TTA_mode = [[], ['Z'], ['W'], ['Z', 'W']]
@@ -147,18 +140,47 @@ def inference(trainer, list_case_dirs, save_path, do_TTA=False):
             # prediction = test_time_augmentation(trainer, input_, TTA_mode)
             # prediction = one_hot_to_img(prediction)
 
-            dict_loss[case_id] = loss_function(pred_spine_heatmap, [target]).cpu()
-            pred_spine_heatmap = pred_spine_heatmap.cpu().numpy()
+            pred_heatmap = pred_heatmap.cpu().numpy()
+            # pred_heatmap = np.where(pred_heatmap > 0, pred_heatmap, 0)  # final pred
 
             # Save prediction to nii image
-            templete_nii = sitk.ReadImage(case_dir + '/MR_512.nii.gz')
+            template_nii = sitk.ReadImage(case_dir + '/MR_512.nii.gz')
 
-            prediction_nii = sitk.GetImageFromArray(pred_spine_heatmap[0][0])
-            prediction_nii = copy_sitk_imageinfo(templete_nii, prediction_nii)
+            prediction_nii = sitk.GetImageFromArray(pred_heatmap[0][0])
+            prediction_nii = copy_sitk_imageinfo(template_nii, prediction_nii)
             if not os.path.exists(save_path + '/' + case_id):
                 os.mkdir(save_path + '/' + case_id)
-            sitk.WriteImage(prediction_nii, save_path + '/' + case_id + '/pred_spine_heatmap.nii.gz')
-    return dict_loss
+            sitk.WriteImage(prediction_nii, save_path + '/' + case_id + '/pred_heatmap.nii.gz')
+
+
+def evaluate(prediction_dir, gt_dir):
+
+    list_errors = []
+    list_case_ids = os.listdir(prediction_dir)
+    for case_id in list_case_ids:
+        pred = sitk.ReadImage(os.path.join(prediction_dir, case_id, 'pred_heatmap.nii.gz'))
+        pred = sitk.GetArrayFromImage(pred)
+        D, H, W = pred.shape
+
+        landmarks = pd.read_csv(os.path.join(gt_dir, case_id, 'landmarks_512.csv'))
+        list_landmarks = landmark_extractor(landmarks)
+        heatmap_generator = HeatmapGenerator(image_size=(D, H, W),
+                                             sigma=2.,
+                                             spine_heatmap_sigma=20,
+                                             scale_factor=1.,
+                                             normalize=True,
+                                             size_sigma_factor=6,
+                                             sigma_scale_factor=1,
+                                             dtype=np.float32)
+        gt = heatmap_generator.generate_spine_heatmap(list_landmarks=list_landmarks)  # 4D
+
+        pred_centroid = ndimage.center_of_mass(pred)
+        gt_centroid = ndimage.center_of_mass(gt[0])
+        error = [abs(pred_centroid[i] - gt_centroid[i]) for i in range(3)]
+        print(f"\n{case_id}:,\npred: {pred_centroid},\ngt: {gt_centroid},\nerror: {error}\n")
+        list_errors.append(error)
+
+    return np.mean(list_errors, axis=0)
 
 
 if __name__ == "__main__":
@@ -205,12 +227,12 @@ if __name__ == "__main__":
     cases = catalogue['test'].dropna()
     list_case_dirs = [os.path.join(path, cases[i]) for i in range(len(cases))]
 
-    dict_loss = inference(trainer, list_case_dirs, save_path=os.path.join(trainer.setting.output_dir, 'Prediction'),
-                          do_TTA=args.TTA)
+    inference(trainer, list_case_dirs, save_path=os.path.join(trainer.setting.output_dir, 'Prediction'),
+              do_TTA=args.TTA)
 
     # Evaluation
     print('\n\n# Start evaluation !')
-    for key, value in dict_loss.items():
-        print(key + ': %12.12f' % value)
+    mean_error = evaluate(prediction_dir=os.path.join(trainer.setting.output_dir, 'Prediction'),
+                          gt_dir=path)
 
-    print('\n\nmean loss is: ' + str(np.mean(list(dict_loss.values()))))
+    print('\n\nmean error: {}'.format(mean_error))
