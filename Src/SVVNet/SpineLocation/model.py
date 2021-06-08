@@ -154,10 +154,12 @@ class Model(nn.Module):
         self.net = BaseUNet(in_ch, list_ch)
 
         self.conv_out = nn.Conv3d(list_ch[1], out_ch, kernel_size=1, padding=0, bias=True)
+        self.act = torch.nn.ReLU(inplace=True)
 
     def forward(self, x):
         out_net = self.net(x)
 
         output = self.conv_out(out_net)
+        output = self.act(output)
 
         return output
