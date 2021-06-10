@@ -81,7 +81,7 @@ if __name__ == '__main__':
     trainer.setting.val_loader = get_loader(
         catalogue=catalogue,
         batch_size=1,
-        num_samples_per_epoch=20,
+        num_samples_per_epoch=31,
         num_works=1,
         phase='val'
     )

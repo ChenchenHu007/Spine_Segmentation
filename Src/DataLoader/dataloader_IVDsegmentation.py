@@ -136,7 +136,7 @@ def train_transform(list_images):
                                               p=0.3)
 
     list_images = random_translate(list_images,  # [MR, spine_heatmap]
-                                   p=0.8,
+                                   p=0.5,
                                    max_shift=3)
 
     # To torch tensor

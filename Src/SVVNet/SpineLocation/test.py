@@ -17,7 +17,6 @@ from DataLoader.dataloader_spinelocation import val_transform
 from utils.heatmap_generator import HeatmapGenerator
 from utils.tools import csv_to_catalogue
 from post_processing import post_processing
-from loss import Loss
 
 
 def landmark_extractor(landmarks):

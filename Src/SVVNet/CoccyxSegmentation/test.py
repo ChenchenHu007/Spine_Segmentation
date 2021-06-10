@@ -122,7 +122,6 @@ def copy_sitk_imageinfo(image1, image2):
 
 # Input is B*C*Z*H*W
 def flip_3d(input_, list_axes):
-
     input_ = torch.flip(input_, list_axes)
 
     return input_
@@ -155,9 +154,9 @@ def inference(trainer, list_case_dirs, save_path, do_TTA=False):
         os.mkdir(save_path)
 
     if do_TTA:
-      TTA_mode = [[], [2], [4], [2, 4]]
+        TTA_mode = [[], [2], [4], [2, 4]]
     else:
-      TTA_mode = [[]]
+        TTA_mode = [[]]
 
     with torch.no_grad():
         trainer.setting.network.eval()
@@ -199,7 +198,8 @@ def inference(trainer, list_case_dirs, save_path, do_TTA=False):
                     input_ = torch.from_numpy(input_).to(trainer.setting.device)
                     # pred_CoccyxMask = trainer.setting.network(input_)  # (2, 2, 12, 128, 128)
                     pred_CoccyxMask = test_time_augmentation(trainer, input_, TTA_mode)
-                    pred_CoccyxMask = post_processing(pred_CoccyxMask, D, device=trainer.setting.device)  # (1, 2, D, 128, 128)
+                    pred_CoccyxMask = post_processing(pred_CoccyxMask, D,
+                                                      device=trainer.setting.device)  # (1, 2, D, 128, 128)
                     pred_CoccyxMask = nn.Softmax(dim=1)(pred_CoccyxMask)
                     pred_CoccyxMask = torch.argmax(pred_CoccyxMask, dim=1)  # (1, D, 128, 128)
 
@@ -286,9 +286,8 @@ if __name__ == "__main__":
     inference(trainer, list_case_dirs, save_path=os.path.join(trainer.setting.output_dir, 'Prediction'),
               do_TTA=args.TTA)
 
-
     print('\n\n# Start evaluation !')
     Dice_score = evaluate_Coccyxs(prediction_dir=os.path.join(trainer.setting.output_dir, 'Prediction'),
-                               gt_dir=path)
+                                  gt_dir=path)
 
     print('\n\nDice score is: ' + str(Dice_score))
