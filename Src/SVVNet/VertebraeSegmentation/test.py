@@ -100,7 +100,7 @@ def read_data(case_dir):
     read data from a given path
     """
     dict_images = dict()
-    list_files = ['MR_512.nii.gz', 'landmarks_512.csv', 'Mask_512.nii.gz']
+    list_files = ['MR_512.nii.gz', 'landmarks_512.csv']
     # In fact, there is no Mask during inference, so we cannot load it.
 
     for file_name in list_files:
