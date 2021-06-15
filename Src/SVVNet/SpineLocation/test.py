@@ -223,7 +223,7 @@ if __name__ == "__main__":
     csv_path = '../../Catalogue' + '/' + str(args.catalogue) + '.csv'
     catalogue = csv_to_catalogue(csv_path)
     path = '../../../Data/Spine_Segmentation'
-    cases = catalogue['test'].dropna()
+    cases = catalogue['test1'].dropna()
     list_case_dirs = [os.path.join(path, cases[i]) for i in range(len(cases))]
 
     inference(trainer, list_case_dirs, save_path=os.path.join(trainer.setting.output_dir, 'Prediction'),

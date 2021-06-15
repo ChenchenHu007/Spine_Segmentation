@@ -56,7 +56,7 @@ if __name__ == "__main__":
 
     csv_path = '../Catalogue/0.csv'
     catalogue = csv_to_catalogue(csv_path)
-    cases = catalogue['test'].dropna()
+    cases = catalogue['test1'].dropna()
     list_case_dirs = dict()
 
     path = "../../Data/Spine_Segmentation"

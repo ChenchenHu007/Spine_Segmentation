@@ -336,7 +336,7 @@ class NetworkTrainer:
 
         # Also display log in the terminal
         txt = txt.replace('\n', '')
-        print(txt)
+        tqdm.write(txt)
 
     def save_trainer(self, status='latest'):
         if len(self.setting.list_GPU_ids) > 1:
