@@ -81,7 +81,31 @@ if __name__ == "__main__":
         pred_Vertebrae = sitk.ReadImage(pred_Vertebrae_path, sitk.sitkUInt8)
         pred_Vertebrae = sitk.GetArrayFromImage(pred_Vertebrae)
 
-        prediction = pred_IVD + pred_Coccyx + pred_Vertebrae
+        # prediction = pred_IVD + pred_Coccyx + pred_Vertebrae
+        prediction = pred_IVD + pred_Vertebrae
+        label_1 = np.where(pred_Coccyx == 1)
+        label_2 = np.where(prediction == 2)
+
+        label_1_array = []
+        label_2_array = []
+        intersection = []
+
+        for i in range(len(label_2[0])):
+            label_2_array.append([label_2[0][i], label_2[1][i], label_2[2][i]])
+
+        for i in range(len(label_1[0])):
+            label_1_array.append([label_1[0][i], label_1[1][i], label_1[2][i]])
+
+        for element in label_1_array:
+            if element in label_2_array:
+                intersection.append(element)
+
+        prediction += pred_Coccyx
+
+        for elem in intersection:
+            z, y, x = elem
+            prediction[z][y][x] = np.uint(1)
+
         # print(prediction.dtype)
         prediction_nii = sitk.GetImageFromArray(prediction)
         prediction_nii = resize_sitk_image(prediction_nii, dsize=(W, H, None), interpolator='nearest')
