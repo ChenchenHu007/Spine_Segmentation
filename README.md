@@ -1,1 +1,1 @@
-# This is the official implementation of SVVNet for spine segmentation
+# Some codes are stolen from C3D.
